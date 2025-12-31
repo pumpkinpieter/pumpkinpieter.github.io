@@ -1,5 +1,5 @@
 layout: page
 title: "My Page Title"
-permalink: /page
+permalink: /page/
 
 Some content
