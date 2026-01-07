@@ -1,7 +1,7 @@
-import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import * as THREE from './three';
+import { OrbitControls } from './three/addons/controls/OrbitControls.js';
 //import Stats from 'three/addons/libs/stats.module.js';
-import { GUI } from 'dat.gui'
+import { GUI } from './dat.gui'
 
 import positions from './data/base_vertices_new.json';
 import guideds from './data/guided_heights.json'
