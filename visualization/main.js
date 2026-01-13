@@ -1,15 +1,17 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 //import Stats from 'three/addons/libs/stats.module.js';
-import { GUI } from 'dat.gui'
+import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 
-import positions from './data/base_vertices.json';
-import guideds from './data/guided_heights.json'
-import propagatings from './data/propagating_heights.json'
-import evanescents from './data/evanescent_heights.json'
-import indices from './data/trig_indices.json';
-import f0s from './data/f0s.json';
-import x0s from './data/x0s.json';
+import positions from './data/base_vertices.json' with { type: "json" };
+import guideds from './data/guided_heights.json' with { type: "json" };
+import propagatings from './data/propagating_heights.json' with { 
+    type: "json" };
+import evanescents from './data/evanescent_heights.json' with { 
+    type: "json" };
+import indices from './data/trig_indices.json' with { type: "json" };
+import f0s from './data/f0s.json' with { type: "json" };
+import x0s from './data/x0s.json' with { type: "json" };
 
 ////////////////////////  Setup ///////////////////////
 
@@ -58,13 +60,14 @@ camera.add(new THREE.AmbientLight(0xffffff,2.5))
 
 //////////////////// Colormaps /////////////////////////////
 
-import viridis from './colormaps/viridis.json'
-import inferno from './colormaps/inferno.json'
-import magma from './colormaps/magma.json'
-import plasma from './colormaps/plasma.json'
-import twilight from './colormaps/twilight_shifted.json'
-import turbo from './colormaps/turbo.json'
-import jet from './colormaps/jet.json'
+import viridis from './colormaps/viridis.json' with { type: "json" };
+import inferno from './colormaps/inferno.json' with { type: "json" };
+import magma from './colormaps/magma.json' with { type: "json" };
+import plasma from './colormaps/plasma.json' with { type: "json" };
+import twilight from './colormaps/twilight_shifted.json' with { type: 
+"json" };
+import turbo from './colormaps/turbo.json' with { type: "json" };
+import jet from './colormaps/jet.json' with { type: "json" };
 
 var viridis_lut = [];
 for (let n=0;n<256;n++) {
