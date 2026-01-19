@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-//import Stats from 'three/addons/libs/stats.module.js';
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 
 import positions from './data/base_vertices.json' with { type: "json" };
@@ -15,10 +14,11 @@ import x0s from './data/x0s.json' with { type: "json" };
 
 ////////////////////////  Setup ///////////////////////
 
-let container;
+let container, gui_container;
 let camera, scene, renderer;
 
 container = document.getElementById( 'container' );
+gui_container = document.getElementById( 'gui' );
 
 const ztranslation = -4.0;
 var requestID;
@@ -26,7 +26,7 @@ var requestID;
 ////////////////////////  Camera ///////////////////////
 
 camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
-camera.position.set( 0, 8,-6);
+camera.position.set( 0, 6,-10);
 
 
 ////////////////////////  Scene ///////////////////////
@@ -42,31 +42,28 @@ const clock = new THREE.Clock();
 
 ////////////////////////  Lights  ///////////////////////
 
-const light = new THREE.DirectionalLight(0xffffff,3)
-light.position.set(0,5,-30)
-camera.add(light)
+// const light = new THREE.DirectionalLight(0xffffff,3)
+// light.position.set(0,5,-30)
+// camera.add(light)
 
-const light2 = new THREE.DirectionalLight(0xffffff,3)
-light2.position.set(20,5,30)
-scene.add(light2)
+// const light2 = new THREE.DirectionalLight(0xffffff,3)
+// light2.position.set(20,5,30)
+// scene.add(light2)
 
-const light3 = new THREE.DirectionalLight(0xffffff,3)
-light3.position.set(0,0,30)
-light3.lookAt(0,0,0)
-scene.add(light3)
+// const light3 = new THREE.DirectionalLight(0xffffff,3)
+// light3.position.set(0,0,30)
+// light3.lookAt(0,0,0)
+// scene.add(light3)
 
-camera.add(new THREE.AmbientLight(0xffffff,2.5))
+// camera.add(new THREE.AmbientLight(0xffffff,2.5))
 
 
 //////////////////// Colormaps /////////////////////////////
 
 import viridis from './colormaps/viridis.json' with { type: "json" };
-import inferno from './colormaps/inferno.json' with { type: "json" };
 import magma from './colormaps/magma.json' with { type: "json" };
-import plasma from './colormaps/plasma.json' with { type: "json" };
 import twilight from './colormaps/twilight_shifted.json' with { type: 
 "json" };
-import turbo from './colormaps/turbo.json' with { type: "json" };
 import jet from './colormaps/jet.json' with { type: "json" };
 
 var viridis_lut = [];
@@ -74,29 +71,14 @@ for (let n=0;n<256;n++) {
 viridis_lut.push(new THREE.Vector3(viridis[n][0], viridis[n][1], viridis[n][2]));
 } 
 
-var inferno_lut = [];
-for (let n=0;n<256;n++) {
-inferno_lut.push(new THREE.Vector3(inferno[n][0], inferno[n][1], inferno[n][2]));
-}
-
 var magma_lut = [];
 for (let n=0;n<256;n++) {
 magma_lut.push(new THREE.Vector3(magma[n][0], magma[n][1], magma[n][2]));
 }
 
-var plasma_lut = [];
-for (let n=0;n<256;n++) {
-plasma_lut.push(new THREE.Vector3(plasma[n][0], plasma[n][1], plasma[n][2]));
-}
-
 var twilight_lut = [];
 for (let n=0;n<256;n++) {
 twilight_lut.push(new THREE.Vector3(twilight[n][0], twilight[n][1], twilight[n][2]));
-}
-
-var turbo_lut = [];
-for (let n=0;n<256;n++) {
-turbo_lut.push(new THREE.Vector3(turbo[n][0], turbo[n][1], turbo[n][2]));
 }
 
 var jet_lut = [];
@@ -107,10 +89,7 @@ jet_lut.push(new THREE.Vector3(jet[n][0], jet[n][1], jet[n][2]));
 const luts = {
   'viridis': viridis_lut,
   'magma': magma_lut,
-  'inferno': inferno_lut,
-  'plasma': plasma_lut,
   'twilight': twilight_lut,
-  'turbo': turbo_lut,
   'jet': jet_lut,
 }
 
@@ -248,6 +227,9 @@ mesh.translateZ(ztranslation);
 
 
 const gui = new GUI();
+// var gui = new GUI({ autoPlace: false });
+// gui.domElement.id = 'gui';
+// gui_container.appendChild(gui.domElement);
 
 const componentsFolder = gui.addFolder('Fields');
 componentsFolder.open();
@@ -278,10 +260,7 @@ componentsFolder
 const colormapList = {
   'viridis': 'viridis',
   'magma': 'magma',
-  'inferno': 'inferno',
-  'plasma':'plasma',
   'twilight':'twilight',
-  'turbo':'turbo',
   'jet':'jet',
 }
 
@@ -307,64 +286,103 @@ const animationFolder = gui.addFolder('Animation');
 animationFolder.open();
 animationFolder.add(mesh.material.uniforms.speed, 'value', 0.0, 10.0).name('speed');
 
-const animationParams = {
-  start_pause: false,
-};
+// const animationParams = {
+//   start_pause: false,
+// };
 
-animationFolder
-  .add(animationParams, 'start_pause')
-  .name('start/pause')
-  .onChange((value) => {
-    if (value === true) {
-      clock.start();
-      clock.elapsedTime = previous;
-      animate();
-    }
-    else{
-    previous = clock.getElapsedTime();
-    clock.running=false;
-    cancelAnimationFrame(requestID);
-  }
-  });
+// animationFolder
+//   .add(animationParams, 'start_pause')
+//   .name('start/pause')
+//   .onChange((value) => {
+//     if (value === true) {
+//       clock.start();
+//       clock.elapsedTime = previous;
+//       animate();
+//     }
+//     else{
+//     previous = clock.getElapsedTime();
+//     clock.running=false;
+//     cancelAnimationFrame(requestID);
+//   }
+//   });
 
 
 ////////////////////////  Render ///////////////////////
 
 renderer = new THREE.WebGLRenderer();
 renderer.setPixelRatio( window.devicePixelRatio );
-renderer.setSize( window.innerWidth, window.innerHeight );
+renderer.setSize( .95 * window.innerWidth, .9 * window.innerHeight );
 container.appendChild( renderer.domElement );
 
 const controls = new OrbitControls( camera, renderer.domElement );
 controls.update();
 
-window.addEventListener( 'resize', onWindowResize );
 
+//////////////////// Event Listeners //////////////////
+
+window.addEventListener( 'resize', onWindowResize );
+renderer.domElement.addEventListener( 'click', onMouseClick);
+renderer.domElement.addEventListener( 'mousemove', onMouseMove);
+renderer.domElement.addEventListener( 'mousedown', onMouseDown);
+renderer.domElement.addEventListener( 'mouseup', onMouseUp);
+
+var mousedown = false;
+var mouseup = true;
+var animating = false;
+var dragging = false;
 
 function onWindowResize() {
 
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
 
-    renderer.setSize( window.innerWidth, window.innerHeight );
+    renderer.setSize( .95*window.innerWidth, .9*window.innerHeight );
 
 }
 
+function onMouseClick(){
+  if(!dragging){
+    if(animating == false){startAnimation()}
+    else{stopAnimation()};
+  }
+}
+
+function onMouseMove(){
+  if(mousedown){dragging=true}
+  else{dragging=false}
+}
+
+function onMouseDown(){
+  mousedown = true;
+  mouseup = false;
+}
+
+function onMouseUp(){
+  mousedown = false;
+  mouseup = true;
+}
+
+function startAnimation(){
+    clock.start();
+    clock.elapsedTime = previous;
+    animating = true;
+    animate();
+}
+
 function stopAnimation() {
-
-  cancelAnimationFrame( requestID );
-
+  previous = clock.getElapsedTime();
+  clock.running=false;
+  cancelAnimationFrame(requestID);
+  animating = false;
 }
 
 animate()
 
 function animate() {
     requestID = requestAnimationFrame( animate );
-    if(animationParams.start_pause == true){
+    if(animating == true){
     uniforms.time.value = clock.getElapsedTime();}
     uniforms.update;
     renderer.render( scene, camera );
-    // stats.update();
 }
 
-function set_colormap(){}
