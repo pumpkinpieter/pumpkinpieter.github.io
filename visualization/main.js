@@ -20,7 +20,7 @@ let camera, scene, renderer;
 container = document.getElementById( 'container' );
 gui_container = document.getElementById( 'gui' );
 
-const ztranslation = -4.0;
+const ztranslation = 0.0;
 var requestID;
 
 ////////////////////////  Camera ///////////////////////
@@ -38,6 +38,19 @@ scene = new THREE.Scene();
 
 
 const clock = new THREE.Clock();
+
+// const fullscreenIcon = document.getElementById('fullscreenIcon')
+// fullscreenIcon.addEventListener('pointerup', () => {
+//     if (renderer.domElement.requestFullscreen) {
+//         renderer.domElement.requestFullscreen()
+//     } else if (renderer.domElement.webkitRequestFullscreen) {
+//         /* Safari */
+//         renderer.domElement.webkitRequestFullscreen()
+//     } else if (renderer.domElement.msRequestFullscreen) {
+//         /* IE11 */
+//         renderer.domElement.msRequestFullscreen()
+//     }
+// })
 
 
 ////////////////////////  Lights  ///////////////////////
@@ -151,9 +164,30 @@ for ( let i = 0; i < f0s.length; i ++ ) {
 line_geo.setAttribute( 'position', new THREE.Float32BufferAttribute( f0_points, 3 ) );
 
 const line = new THREE.Line( line_geo, line_material );
-line.material.linewidth =30.0;
+// line.material.linewidth =30.0;
 scene.add( line );
 
+
+//////////////// Planes (Ref Idx Profile) ////////////
+// const lut = new Lut( 'rainbow', 512 );
+// const color = lut.getColor( 0.5 );
+
+const geometry2 = new THREE.PlaneGeometry( 2, 24, 10, 10 );
+const wireframe2 = new THREE.WireframeGeometry(geometry2);
+const line2 = new THREE.LineSegments(wireframe2);
+line.material.depthWrite = false;
+line.material.opacity = 1;
+line.material.transparent = false;
+line2.rotateX(Math.PI/2)
+line2.translateY(12);
+line2.translateZ(0);
+
+const material2 = new THREE.MeshPhongMaterial( { color: 0x156289, emissive: 0x072534, side: THREE.DoubleSide, flatShading: true } );
+const plane = new THREE.Mesh( geometry2, material2);
+plane.rotateX(Math.PI/2)
+plane.translateY(12);
+plane.translateZ(0);
+// scene.add( plane );
 
 ////////////////////////  Mesh ///////////////////////
 
@@ -218,8 +252,10 @@ const material_shader = new THREE.ShaderMaterial( {
 } );
 
 const mesh = new THREE.Mesh( geometry, material_shader );
+mesh.material.transparent = true;
 scene.add( mesh );
 mesh.translateZ(ztranslation);
+// scene.add(line2);
 
 
 
