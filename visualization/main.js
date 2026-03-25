@@ -20,13 +20,13 @@ let camera, scene, renderer;
 container = document.getElementById( 'container' );
 gui_container = document.getElementById( 'gui' );
 
-const ztranslation = 0.0;
+const ztranslation = -4.0;
 var requestID;
 
 ////////////////////////  Camera ///////////////////////
 
 camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
-camera.position.set( 0, 6,-10);
+camera.position.set( 0, 7,-7);
 
 
 ////////////////////////  Scene ///////////////////////
@@ -51,24 +51,6 @@ const clock = new THREE.Clock();
 //         renderer.domElement.msRequestFullscreen()
 //     }
 // })
-
-
-////////////////////////  Lights  ///////////////////////
-
-// const light = new THREE.DirectionalLight(0xffffff,3)
-// light.position.set(0,5,-30)
-// camera.add(light)
-
-// const light2 = new THREE.DirectionalLight(0xffffff,3)
-// light2.position.set(20,5,30)
-// scene.add(light2)
-
-// const light3 = new THREE.DirectionalLight(0xffffff,3)
-// light3.position.set(0,0,30)
-// light3.lookAt(0,0,0)
-// scene.add(light3)
-
-// camera.add(new THREE.AmbientLight(0xffffff,2.5))
 
 
 //////////////////// Colormaps /////////////////////////////
@@ -112,7 +94,7 @@ const colormaxscale = .6 * Math.max(...f0s);
 
 const uniforms = {	
   time: {type: 'f', value: clock.getElapsedTime()},
-  speed: {value: 2.0},
+  speed: {value: 2.5},
   scale: {value: 10.0},
   guided_on: {value:true},
   evanescent_on: {value:true},
@@ -124,7 +106,6 @@ const uniforms = {
 ////////////////////////  Line (input function) ///////////////////////
 
 const line_geo = new THREE.BufferGeometry();
-// const line_material = new THREE.LineBasicMaterial( { color: 0x0000ff } );
 
 const line_material = new THREE.ShaderMaterial( {
   wireframeLinewidth:10.0,
@@ -164,7 +145,6 @@ for ( let i = 0; i < f0s.length; i ++ ) {
 line_geo.setAttribute( 'position', new THREE.Float32BufferAttribute( f0_points, 3 ) );
 
 const line = new THREE.Line( line_geo, line_material );
-// line.material.linewidth =30.0;
 scene.add( line );
 
 
@@ -255,17 +235,41 @@ const mesh = new THREE.Mesh( geometry, material_shader );
 mesh.material.transparent = true;
 scene.add( mesh );
 mesh.translateZ(ztranslation);
-// scene.add(line2);
-
 
 
 ////////////////////////  GUI ///////////////////////
 
 
 const gui = new GUI();
+container.appendChild(gui.domElement);
+
 // var gui = new GUI({ autoPlace: false });
 // gui.domElement.id = 'gui';
 // gui_container.appendChild(gui.domElement);
+
+const viewFolder = gui.addFolder('View');
+viewFolder.open();
+
+const viewParams = {
+  reset_controls: function(){controls.reset()},
+  full_screen: function (){
+    const fullscreenElement =
+        document.fullscreenElement || document.webkitFullscreenElement;
+    if (!fullscreenElement) {
+        if (window.document.documentElement.requestFullscreen) {
+            container.requestFullscreen();
+        } else if (canvas.webkitRequestFullscreen) {
+            container.webkitRequestFullscreen();
+        }
+    } else if (document.exitFullscreen) {
+        document.exitFullscreen();
+    } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+    }
+}};
+
+viewFolder.add(viewParams, 'reset_controls').name('Reset')
+viewFolder.add(viewParams, 'full_screen').name('Full screen')
 
 const componentsFolder = gui.addFolder('Fields');
 componentsFolder.open();
@@ -322,32 +326,32 @@ const animationFolder = gui.addFolder('Animation');
 animationFolder.open();
 animationFolder.add(mesh.material.uniforms.speed, 'value', 0.0, 10.0).name('speed');
 
-// const animationParams = {
-//   start_pause: false,
-// };
+const animationParams = {
+  start_pause: false,
+};
 
-// animationFolder
-//   .add(animationParams, 'start_pause')
-//   .name('start/pause')
-//   .onChange((value) => {
-//     if (value === true) {
-//       clock.start();
-//       clock.elapsedTime = previous;
-//       animate();
-//     }
-//     else{
-//     previous = clock.getElapsedTime();
-//     clock.running=false;
-//     cancelAnimationFrame(requestID);
-//   }
-//   });
+animationFolder
+  .add(animationParams, 'start_pause')
+  .name('start/pause')
+  .onChange((value) => {
+    if (value === true) {
+      clock.start();
+      clock.elapsedTime = previous;
+      animate();
+    }
+    else{
+    previous = clock.getElapsedTime();
+    clock.running=false;
+    cancelAnimationFrame(requestID);
+  }
+  });
 
 
 ////////////////////////  Render ///////////////////////
 
 renderer = new THREE.WebGLRenderer();
 renderer.setPixelRatio( window.devicePixelRatio );
-renderer.setSize( .95 * window.innerWidth, .9 * window.innerHeight );
+renderer.setSize(window.innerWidth, window.innerHeight );
 container.appendChild( renderer.domElement );
 
 const controls = new OrbitControls( camera, renderer.domElement );
@@ -357,66 +361,21 @@ controls.update();
 //////////////////// Event Listeners //////////////////
 
 window.addEventListener( 'resize', onWindowResize );
-renderer.domElement.addEventListener( 'click', onMouseClick);
-renderer.domElement.addEventListener( 'mousemove', onMouseMove);
-renderer.domElement.addEventListener( 'mousedown', onMouseDown);
-renderer.domElement.addEventListener( 'mouseup', onMouseUp);
-
-var mousedown = false;
-var mouseup = true;
-var animating = false;
-var dragging = false;
 
 function onWindowResize() {
 
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
 
-    renderer.setSize( .95*window.innerWidth, .9*window.innerHeight );
+    renderer.setSize( window.innerWidth, window.innerHeight );
 
-}
-
-function onMouseClick(){
-  if(!dragging){
-    if(animating == false){startAnimation()}
-    else{stopAnimation()};
-  }
-}
-
-function onMouseMove(){
-  if(mousedown){dragging=true}
-  else{dragging=false}
-}
-
-function onMouseDown(){
-  mousedown = true;
-  mouseup = false;
-}
-
-function onMouseUp(){
-  mousedown = false;
-  mouseup = true;
-}
-
-function startAnimation(){
-    clock.start();
-    clock.elapsedTime = previous;
-    animating = true;
-    animate();
-}
-
-function stopAnimation() {
-  previous = clock.getElapsedTime();
-  clock.running=false;
-  cancelAnimationFrame(requestID);
-  animating = false;
 }
 
 animate()
 
 function animate() {
     requestID = requestAnimationFrame( animate );
-    if(animating == true){
+    if(animationParams.start_pause == true){
     uniforms.time.value = clock.getElapsedTime();}
     uniforms.update;
     renderer.render( scene, camera );
