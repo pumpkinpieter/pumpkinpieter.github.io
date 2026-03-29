@@ -1,6 +1,10 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+// import { Line2 } from 'three/addons/lines/Line2.js';
+// import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
+// import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
+// import * as GeometryUtils from 'three/addons/utils/GeometryUtils.js';
 
 import positions from './data/base_vertices.json' with { type: "json" };
 import guideds from './data/guided_heights.json' with { type: "json" };
@@ -38,6 +42,23 @@ scene = new THREE.Scene();
 
 
 const clock = new THREE.Clock();
+
+////////////////////////  Lights  ///////////////////////
+
+// const light = new THREE.DirectionalLight(0xffffff,3)
+// light.position.set(0,5,-30)
+// camera.add(light)
+
+// const light2 = new THREE.DirectionalLight(0xffffff,3)
+// light2.position.set(20,5,30)
+// scene.add(light2)
+
+// const light3 = new THREE.DirectionalLight(0xffffff,3)
+// light3.position.set(0,0,30)
+// light3.lookAt(0,0,0)
+// scene.add(light3)
+
+// camera.add(new THREE.AmbientLight(0xffffff,2.5))
 
 // const fullscreenIcon = document.getElementById('fullscreenIcon')
 // fullscreenIcon.addEventListener('pointerup', () => {
@@ -145,6 +166,7 @@ for ( let i = 0; i < f0s.length; i ++ ) {
 line_geo.setAttribute( 'position', new THREE.Float32BufferAttribute( f0_points, 3 ) );
 
 const line = new THREE.Line( line_geo, line_material );
+line.material.linewidth =30.0;
 scene.add( line );
 
 
@@ -155,18 +177,18 @@ scene.add( line );
 const geometry2 = new THREE.PlaneGeometry( 2, 24, 10, 10 );
 const wireframe2 = new THREE.WireframeGeometry(geometry2);
 const line2 = new THREE.LineSegments(wireframe2);
-line.material.depthWrite = false;
-line.material.opacity = 1;
-line.material.transparent = false;
+line2.material.depthWrite = false;
+line2.material.opacity = 1;
+line2.material.transparent = false;
 line2.rotateX(Math.PI/2)
 line2.translateY(12);
 line2.translateZ(0);
 
-const material2 = new THREE.MeshPhongMaterial( { color: 0x156289, emissive: 0x072534, side: THREE.DoubleSide, flatShading: true } );
-const plane = new THREE.Mesh( geometry2, material2);
-plane.rotateX(Math.PI/2)
-plane.translateY(12);
-plane.translateZ(0);
+// const material2 = new THREE.MeshPhongMaterial( { color: 0x156289, emissive: 0x072534, side: THREE.DoubleSide, flatShading: true } );
+// const plane = new THREE.Mesh( geometry2, material2);
+// plane.rotateX(Math.PI/2)
+// plane.translateY(12);
+// plane.translateZ(0);
 // scene.add( plane );
 
 ////////////////////////  Mesh ///////////////////////
@@ -332,15 +354,18 @@ const animationParams = {
 
 animationFolder
   .add(animationParams, 'start_pause')
+  .listen()
   .name('start/pause')
   .onChange((value) => {
     if (value === true) {
       clock.start();
       clock.elapsedTime = previous;
+      animating = true;
       animate();
     }
     else{
     previous = clock.getElapsedTime();
+    animating = false;
     clock.running=false;
     cancelAnimationFrame(requestID);
   }
@@ -371,11 +396,59 @@ function onWindowResize() {
 
 }
 
+renderer.domElement.addEventListener( 'click', onMouseClick);
+renderer.domElement.addEventListener( 'mousemove', onMouseMove);
+renderer.domElement.addEventListener( 'mousedown', onMouseDown);
+renderer.domElement.addEventListener( 'mouseup', onMouseUp);
+
+var mousedown = false;
+var mouseup = true;
+var animating = false;
+var dragging = false;
+
+function onMouseClick(){
+  if(!dragging){
+    if(animating == false){startAnimation()}
+    else{stopAnimation()};
+  }
+}
+
+function onMouseMove(){
+  if(mousedown){dragging=true}
+  else{dragging=false}
+}
+
+function onMouseDown(){
+  mousedown = true;
+  mouseup = false;
+}
+
+function onMouseUp(){
+  mousedown = false;
+  mouseup = true;
+}
+
+function startAnimation(){
+    clock.start();
+    clock.elapsedTime = previous;
+    animationParams.start_pause = true;
+    animating = true;
+    animate();
+}
+
+function stopAnimation() {
+  previous = clock.getElapsedTime();
+  clock.running=false;
+  animationParams.start_pause = false;
+  cancelAnimationFrame(requestID);
+  animating = false;
+}
+
 animate()
 
 function animate() {
     requestID = requestAnimationFrame( animate );
-    if(animationParams.start_pause == true){
+    if(animating == true){
     uniforms.time.value = clock.getElapsedTime();}
     uniforms.update;
     renderer.render( scene, camera );
