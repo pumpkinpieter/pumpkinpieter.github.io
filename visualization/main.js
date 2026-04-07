@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
-// import { Line2 } from 'three/addons/lines/Line2.js';
-// import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
-// import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
-// import * as GeometryUtils from 'three/addons/utils/GeometryUtils.js';
+import { Line2 } from 'three/addons/lines/Line2.js';
+import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
+import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
+import * as GeometryUtils from 'three/addons/utils/GeometryUtils.js';
 
 import positions from './data/base_vertices.json' with { type: "json" };
 import guideds from './data/guided_heights.json' with { type: "json" };
@@ -30,9 +30,7 @@ var requestID;
 ////////////////////////  Camera ///////////////////////
 
 camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
-camera.position.set( 0, 7,-7);
-
-
+camera.position.set( -0.0466, 4.2029, -8.4371);
 ////////////////////////  Scene ///////////////////////
 
 scene = new THREE.Scene();
@@ -126,30 +124,30 @@ const uniforms = {
 
 ////////////////////////  Line (input function) ///////////////////////
 
-const line_geo = new THREE.BufferGeometry();
+// const line_geo = new THREE.BufferGeometry();
 
-const line_material = new THREE.ShaderMaterial( {
-  wireframeLinewidth:10.0,
-    uniforms: uniforms,
-    vertexShader: `
-        uniform float speed;
-        uniform float scale;
-        uniform float time;
+// const line_material = new THREE.ShaderMaterial( {
+//   wireframeLinewidth:10.0,
+//     uniforms: uniforms,
+//     vertexShader: `
+//         uniform float speed;
+//         uniform float scale;
+//         uniform float time;
 
-        void main(){
-            vec4 result;
+//         void main(){
+//             vec4 result;
 
-            result = vec4( position.x, scale*position.y*cos(speed*time), position.z, 1.0 );
-            gl_Position = projectionMatrix * modelViewMatrix * result;
+//             result = vec4( position.x, scale*position.y*cos(speed*time), position.z, 1.0 );
+//             gl_Position = projectionMatrix * modelViewMatrix * result;
 
-        }`,
-    fragmentShader: `
-        void main() {
-          gl_FragColor =  vec4(0,1,0,1);
-        }`,
-    side: THREE.DoubleSide,
-    wireframe:false,
-} );
+//         }`,
+//     fragmentShader: `
+//         void main() {
+//           gl_FragColor =  vec4(0,1,0,1);
+//         }`,
+//     side: THREE.DoubleSide,
+//     wireframe:false,
+// } );
 
 const f0_points = [];
 
@@ -163,26 +161,64 @@ for ( let i = 0; i < f0s.length; i ++ ) {
 
 }
 
-line_geo.setAttribute( 'position', new THREE.Float32BufferAttribute( f0_points, 3 ) );
+// line_geo.setAttribute( 'position', new THREE.Float32BufferAttribute( f0_points, 3 ) );
 
-const line = new THREE.Line( line_geo, line_material );
-line.material.linewidth =30.0;
-scene.add( line );
+// const line = new THREE.Line( line_geo, line_material );
+// line.material.linewidth =30.0;
+// scene.add( line );
 
+//////////////// Fatlines Input Field /////////////
+
+const geometry2 = new LineGeometry();
+geometry2.setPositions( f0_points );
+
+let matLine = new LineMaterial( {
+
+  color: new THREE.Color().setRGB (0.20784313725490197, 0.5176470588235295, 0.8941176470588236),
+  linewidth: 3, // in pixels
+  dashed: false
+
+} );
+
+matLine.uniforms.scale = uniforms.scale;
+matLine.uniforms.time = uniforms.time;
+matLine.uniforms.speed = uniforms.speed;
+
+matLine.onBeforeCompile = function ( shader ) {
+
+  shader.vertexShader = 'uniform float scale;\n' + shader.vertexShader;
+  shader.vertexShader = 'uniform float time;\n' + shader.vertexShader;
+  shader.vertexShader = 'uniform float speed;\n' + shader.vertexShader;
+  shader.vertexShader = shader.vertexShader.replace(
+    'vec4 start = modelViewMatrix * vec4( instanceStart, 1.0 );',
+    'vec4 start = modelViewMatrix * vec4( vec3(instanceStart.x,scale*cos(speed*time)*instanceStart.y,instanceStart.z), 1.0 );'
+  ).replace(
+    'vec4 end = modelViewMatrix * vec4( instanceEnd, 1.0 );',
+    'vec4 end = modelViewMatrix * vec4( vec3(instanceEnd.x,scale*cos(speed*time)*instanceEnd.y,instanceEnd.z), 1.0 );'
+  );
+
+matLine.userData.shader = shader;
+
+};
+
+const line2 = new Line2( geometry2, matLine );
+line2.computeLineDistances();
+line2.scale.set( 1, 1, 1 );
+scene.add( line2 );
 
 //////////////// Planes (Ref Idx Profile) ////////////
 // const lut = new Lut( 'rainbow', 512 );
 // const color = lut.getColor( 0.5 );
 
-const geometry2 = new THREE.PlaneGeometry( 2, 24, 10, 10 );
-const wireframe2 = new THREE.WireframeGeometry(geometry2);
-const line2 = new THREE.LineSegments(wireframe2);
-line2.material.depthWrite = false;
-line2.material.opacity = 1;
-line2.material.transparent = false;
-line2.rotateX(Math.PI/2)
-line2.translateY(12);
-line2.translateZ(0);
+// const geometry2 = new THREE.PlaneGeometry( 2, 24, 10, 10 );
+// const wireframe2 = new THREE.WireframeGeometry(geometry2);
+// const line2 = new THREE.LineSegments(wireframe2);
+// line2.material.depthWrite = false;
+// line2.material.opacity = 1;
+// line2.material.transparent = false;
+// line2.rotateX(Math.PI/2)
+// line2.translateY(12);
+// line2.translateZ(0);
 
 // const material2 = new THREE.MeshPhongMaterial( { color: 0x156289, emissive: 0x072534, side: THREE.DoubleSide, flatShading: true } );
 // const plane = new THREE.Mesh( geometry2, material2);
@@ -250,7 +286,7 @@ const material_shader = new THREE.ShaderMaterial( {
       gl_FragColor = vec4(vColor,1.0);
     }`,
     side: THREE.DoubleSide,
-    wireframe:false,
+    wireframe: false,
 } );
 
 const mesh = new THREE.Mesh( geometry, material_shader );
@@ -371,6 +407,26 @@ animationFolder
   }
   });
 
+const inputFieldFolder = gui.addFolder('Input Field');
+inputFieldFolder.open();
+
+const inputFieldParams = {
+  width: 3,
+  color: [0.20784313725490197, 0.5176470588235295, 0.8941176470588236],
+};
+
+inputFieldFolder.add( inputFieldParams, 'width', 0, 5 ).onChange( function ( value ) {
+
+  matLine.linewidth = value;
+
+} );
+
+inputFieldFolder.addColor( inputFieldParams, 'color').onChange(function (value) {
+  const color = new THREE.Color().setRGB(value[0], value[1], value[2]);
+  line2.material.color = color;
+  console.log(line2.material.color);
+});
+inputFieldFolder.close();
 
 ////////////////////////  Render ///////////////////////
 
@@ -381,7 +437,7 @@ container.appendChild( renderer.domElement );
 
 const controls = new OrbitControls( camera, renderer.domElement );
 controls.update();
-
+// controls.addEventListener( 'change', function(){console.log(camera.position)} );
 
 //////////////////// Event Listeners //////////////////
 
