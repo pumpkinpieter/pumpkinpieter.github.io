@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+
 import { Line2 } from 'three/addons/lines/Line2.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
-import * as GeometryUtils from 'three/addons/utils/GeometryUtils.js';
 
 import positions from './data/base_vertices.json' with { type: "json" };
 import guideds from './data/guided_heights.json' with { type: "json" };
@@ -39,37 +39,50 @@ scene = new THREE.Scene();
 ////////////////////////  Clock ///////////////////////
 
 
-const clock = new THREE.Clock();
+class StopWatch extends THREE.Timer {
+    constructor(paused = false){
+        super();
+        this.time = 0.0;
+        this.startTime = 0.0;
+        this.stopTime = 0.0;
+        this.totalPause = 0.0;
+        this.totalRun = 0.0;
+        this.lastResetTime = 0.0;
+        this.paused = paused;
+    }
+    
+    reset(){
+        this.lastResetTime = super.getElapsed();
+        this.totalPause = 0.0;
+        this.totalRun = 0.0;
+        this.startTime = this.lastResetTime;
+        this.stopTime = this.lastResetTime;
+    }
+    pause(){
+        if(this.paused){
+            // already paused, start again
+            this.startTime = super.getElapsed();
+            this.totalPause += this.startTime - this.stopTime;
+            this.paused = false;
+        }
+        else{ // currently running, stop it
+            this.stopTime = super.getElapsed();
+            this.totalRun += this.stopTime - this.startTime;
+            this.paused = true;
+        }
+    }
+    run(){
+        super.update();
+        if(this.paused){
+            this.time = this.totalRun;
+        }
+        else{
+            this.time = super.getElapsed() - this.totalPause - this.lastResetTime;
+        }
+    }
+}
 
-////////////////////////  Lights  ///////////////////////
-
-// const light = new THREE.DirectionalLight(0xffffff,3)
-// light.position.set(0,5,-30)
-// camera.add(light)
-
-// const light2 = new THREE.DirectionalLight(0xffffff,3)
-// light2.position.set(20,5,30)
-// scene.add(light2)
-
-// const light3 = new THREE.DirectionalLight(0xffffff,3)
-// light3.position.set(0,0,30)
-// light3.lookAt(0,0,0)
-// scene.add(light3)
-
-// camera.add(new THREE.AmbientLight(0xffffff,2.5))
-
-// const fullscreenIcon = document.getElementById('fullscreenIcon')
-// fullscreenIcon.addEventListener('pointerup', () => {
-//     if (renderer.domElement.requestFullscreen) {
-//         renderer.domElement.requestFullscreen()
-//     } else if (renderer.domElement.webkitRequestFullscreen) {
-//         /* Safari */
-//         renderer.domElement.webkitRequestFullscreen()
-//     } else if (renderer.domElement.msRequestFullscreen) {
-//         /* IE11 */
-//         renderer.domElement.msRequestFullscreen()
-//     }
-// })
+const stopwatch = new StopWatch();
 
 
 //////////////////// Colormaps /////////////////////////////
@@ -112,9 +125,9 @@ const colormaxscale = .6 * Math.max(...f0s);
 ////////////////////  Uniforms  /////////////////////////////
 
 const uniforms = {	
-  time: {type: 'f', value: clock.getElapsedTime()},
+  time: {type: 'f', value: stopwatch.time},
   speed: {value: 2.5},
-  scale: {value: 10.0},
+  scale: {value: 5.0},
   guided_on: {value:true},
   evanescent_on: {value:true},
   propagating_on: {value:true},
@@ -122,32 +135,7 @@ const uniforms = {
   colormax: {type: 'f', value:colormaxscale}
 }
 
-////////////////////////  Line (input function) ///////////////////////
-
-// const line_geo = new THREE.BufferGeometry();
-
-// const line_material = new THREE.ShaderMaterial( {
-//   wireframeLinewidth:10.0,
-//     uniforms: uniforms,
-//     vertexShader: `
-//         uniform float speed;
-//         uniform float scale;
-//         uniform float time;
-
-//         void main(){
-//             vec4 result;
-
-//             result = vec4( position.x, scale*position.y*cos(speed*time), position.z, 1.0 );
-//             gl_Position = projectionMatrix * modelViewMatrix * result;
-
-//         }`,
-//     fragmentShader: `
-//         void main() {
-//           gl_FragColor =  vec4(0,1,0,1);
-//         }`,
-//     side: THREE.DoubleSide,
-//     wireframe:false,
-// } );
+////////////////////////  Line (Input Field) ///////////////////////
 
 const f0_points = [];
 
@@ -160,14 +148,6 @@ for ( let i = 0; i < f0s.length; i ++ ) {
   f0_points.push( x, y, z );
 
 }
-
-// line_geo.setAttribute( 'position', new THREE.Float32BufferAttribute( f0_points, 3 ) );
-
-// const line = new THREE.Line( line_geo, line_material );
-// line.material.linewidth =30.0;
-// scene.add( line );
-
-//////////////// Fatlines Input Field /////////////
 
 const geometry2 = new LineGeometry();
 geometry2.setPositions( f0_points );
@@ -301,11 +281,7 @@ mesh.translateZ(ztranslation);
 const gui = new GUI();
 container.appendChild(gui.domElement);
 
-// var gui = new GUI({ autoPlace: false });
-// gui.domElement.id = 'gui';
-// gui_container.appendChild(gui.domElement);
-
-const viewFolder = gui.addFolder('View');
+const viewFolder = gui.addFolder('Camera');
 viewFolder.open();
 
 const viewParams = {
@@ -326,10 +302,45 @@ const viewParams = {
     }
 }};
 
-viewFolder.add(viewParams, 'reset_controls').name('Reset')
-viewFolder.add(viewParams, 'full_screen').name('Full screen')
+viewFolder.add(viewParams, 'full_screen').name('Full Screen')
+viewFolder.add(viewParams, 'reset_controls').name('Reset View')
 
-const componentsFolder = gui.addFolder('Fields');
+const animationFolder = gui.addFolder('Animation');
+animationFolder.open();
+
+const animationParams = {
+  reset_time: function(){
+    stopwatch.reset()
+  },
+  play_pause: function(){
+    stopwatch.pause()
+  }
+  // pause: stopwatch.paused,
+}
+
+animationFolder
+  .add(animationParams, 'play_pause')
+  .listen()
+  .name('Play / Pause')
+
+// animationFolder
+//   .add(animationParams, 'pause')
+//   .listen()
+//   .name('pause')
+//   .onChange(function(){
+//     stopwatch.pause();
+//     console.log(stopwatch.paused);
+//   })
+
+animationFolder
+  .add(animationParams, 'reset_time')
+  .listen()
+  .name('Restart')
+
+animationFolder.add(mesh.material.uniforms.speed, 'value', 0.0, 10.0).name('Speed');
+// animationFolder.close();
+
+const componentsFolder = gui.addFolder('Field Components');
 componentsFolder.open();
 const componentsParams = {
   guided_on: true,
@@ -339,21 +350,23 @@ const componentsParams = {
 
 componentsFolder
   .add(componentsParams, 'guided_on')
-  .name('guided')
+  .name('Guided')
   .onChange((value) =>{mesh.material.uniforms.guided_on.value = value;
   });
 
 componentsFolder
   .add(componentsParams, 'propagating_on')
-  .name('propagating')
+  .name('Propagating')
   .onChange((value) =>{mesh.material.uniforms.propagating_on.value = value;
   });
 
 componentsFolder
   .add(componentsParams, 'evanescent_on')
-  .name('evanescent')
+  .name('Evanescent')
   .onChange((value) =>{mesh.material.uniforms.evanescent_on.value = value;
   });
+
+componentsFolder.close();
 
 const colormapList = {
   'viridis': 'viridis',
@@ -368,46 +381,22 @@ const appearenceParams = {
   
 const appearenceFolder = gui.addFolder('Appearence');
 appearenceFolder.open();
-appearenceFolder.add(mesh.material, 'wireframe');
-appearenceFolder.add(mesh.material.uniforms.scale, 'value', 0.0, 40.0).name('scale');
 
-appearenceFolder
+const meshAppearenceFolder = appearenceFolder.addFolder('Induced Field');
+meshAppearenceFolder.open();
+meshAppearenceFolder.add(mesh.material.uniforms.scale, 'value', 0.0, 20.0).name('scale');
+
+meshAppearenceFolder
   .add(appearenceParams, 'colormaps', colormapList)
   .name('colormap')
   .onChange((value) =>{mesh.material.uniforms.vLut.value = luts[value];
   });
 
-var previous;
-previous = 0.0;
+meshAppearenceFolder.add(mesh.material, 'wireframe');
 
-const animationFolder = gui.addFolder('Animation');
-animationFolder.open();
-animationFolder.add(mesh.material.uniforms.speed, 'value', 0.0, 10.0).name('speed');
+appearenceFolder.close();
 
-const animationParams = {
-  start_pause: false,
-};
-
-animationFolder
-  .add(animationParams, 'start_pause')
-  .listen()
-  .name('start/pause')
-  .onChange((value) => {
-    if (value === true) {
-      clock.start();
-      clock.elapsedTime = previous;
-      animating = true;
-      animate();
-    }
-    else{
-    previous = clock.getElapsedTime();
-    animating = false;
-    clock.running=false;
-    cancelAnimationFrame(requestID);
-  }
-  });
-
-const inputFieldFolder = gui.addFolder('Input Field');
+const inputFieldFolder = appearenceFolder.addFolder('Input Field');
 inputFieldFolder.open();
 
 const inputFieldParams = {
@@ -415,18 +404,22 @@ const inputFieldParams = {
   color: [0.20784313725490197, 0.5176470588235295, 0.8941176470588236],
 };
 
-inputFieldFolder.add( inputFieldParams, 'width', 0, 5 ).onChange( function ( value ) {
+inputFieldFolder
+  .add( inputFieldParams, 'width', 0, 5 )
+  .name('line width')
+  .onChange( function ( value ) {
 
   matLine.linewidth = value;
 
 } );
 
-inputFieldFolder.addColor( inputFieldParams, 'color').onChange(function (value) {
-  const color = new THREE.Color().setRGB(value[0], value[1], value[2]);
-  line2.material.color = color;
-  console.log(line2.material.color);
+inputFieldFolder
+  .addColor( inputFieldParams, 'color')
+  .name('line color')
+  .onChange(function (value) {
+    const color = new THREE.Color().setRGB(value[0], value[1], value[2]);
+    line2.material.color = color;
 });
-inputFieldFolder.close();
 
 ////////////////////////  Render ///////////////////////
 
@@ -438,6 +431,7 @@ container.appendChild( renderer.domElement );
 const controls = new OrbitControls( camera, renderer.domElement );
 controls.update();
 // controls.addEventListener( 'change', function(){console.log(camera.position)} );
+
 
 //////////////////// Event Listeners //////////////////
 
@@ -459,13 +453,11 @@ renderer.domElement.addEventListener( 'mouseup', onMouseUp);
 
 var mousedown = false;
 var mouseup = true;
-var animating = false;
 var dragging = false;
 
 function onMouseClick(){
   if(!dragging){
-    if(animating == false){startAnimation()}
-    else{stopAnimation()};
+    stopwatch.pause();
   }
 }
 
@@ -484,29 +476,14 @@ function onMouseUp(){
   mouseup = true;
 }
 
-function startAnimation(){
-    clock.start();
-    clock.elapsedTime = previous;
-    animationParams.start_pause = true;
-    animating = true;
-    animate();
-}
-
-function stopAnimation() {
-  previous = clock.getElapsedTime();
-  clock.running=false;
-  animationParams.start_pause = false;
-  cancelAnimationFrame(requestID);
-  animating = false;
-}
-
 animate()
 
 function animate() {
-    requestID = requestAnimationFrame( animate );
-    if(animating == true){
-    uniforms.time.value = clock.getElapsedTime();}
-    uniforms.update;
-    renderer.render( scene, camera );
+  requestID = requestAnimationFrame( animate );
+  stopwatch.run();
+  uniforms.time.value = stopwatch.time;
+  uniforms.update;
+  renderer.render( scene, camera );
+  // console.log(stopwatch.time);
 }
 
