@@ -25,7 +25,6 @@ container = document.getElementById( 'container' );
 gui_container = document.getElementById( 'gui' );
 
 const ztranslation = -4.0;
-var requestID;
 
 ////////////////////////  Camera ///////////////////////
 
@@ -476,6 +475,8 @@ function onMouseUp(){
   mouseup = true;
 }
 
+var requestID;
+
 animate()
 
 function animate() {
@@ -484,6 +485,5 @@ function animate() {
   uniforms.time.value = stopwatch.time;
   uniforms.update;
   renderer.render( scene, camera );
-  // console.log(stopwatch.time);
 }
 
