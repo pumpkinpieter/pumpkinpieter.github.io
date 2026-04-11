@@ -119,7 +119,7 @@ const luts = {
   'jet': jet_lut,
 }
 
-const colormaxscale = .6 * Math.max(...f0s);
+const colormaxscale = Math.max(...f0s);
 
 ////////////////////  Uniforms  /////////////////////////////
 
