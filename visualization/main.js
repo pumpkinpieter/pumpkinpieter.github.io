@@ -120,6 +120,7 @@ const luts = {
 }
 
 const colormaxscale = Math.max(...f0s);
+const colorminscale = -Math.max(...f0s);
 
 ////////////////////  Uniforms  /////////////////////////////
 
@@ -131,7 +132,8 @@ const uniforms = {
   evanescent_on: {value:true},
   propagating_on: {value:true},
   vLut: {type: "v3v", value: luts['viridis']},
-  colormax: {type: 'f', value:colormaxscale}
+  colormax: {type: 'f', value:colormaxscale},
+  colormin: {type: 'f', value:colorminscale}
 }
 
 ////////////////////////  Line (Input Field) ///////////////////////
@@ -231,6 +233,7 @@ const material_shader = new THREE.ShaderMaterial( {
         uniform float speed;
         uniform float scale;
         uniform float colormax;
+        uniform float colormin;
         uniform float time;
         uniform vec3 vLut[256];
         varying vec3 vColor;
@@ -254,7 +257,7 @@ const material_shader = new THREE.ShaderMaterial( {
             }
             float ypos = (cos(speed*time)*Real + sin(speed*time)*Imag);
             result = vec4( position.x, scale*ypos, position.z, 1.0 );
-            int index = int(256.0*(ypos+colormax)/(2.0*colormax));
+            int index = int(256.0*(ypos-colormin)/(colormax - colormin));
             vColor = vLut[index];
             gl_Position = projectionMatrix * modelViewMatrix * result;
 
