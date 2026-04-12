@@ -260,7 +260,7 @@ const material_shader = new THREE.ShaderMaterial( {
             }
             float ypos = (cos(speed*time)*Real + sin(speed*time)*Imag);
             result = vec4( position.x, scale*ypos, position.z, 1.0 );
-            int index = int(floor(clamp(256.0/colorscale*(ypos-colorscale*colormin)/(colormax - colormin),0.0, 256.0)));
+            int index = int(floor(clamp(255.0/colorscale*(ypos-colorscale*colormin)/(colormax - colormin),0.0, 255.0)));
             vColor = vLut[index];
             gl_Position = projectionMatrix * modelViewMatrix * result;
 
