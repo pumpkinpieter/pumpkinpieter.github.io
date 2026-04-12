@@ -118,22 +118,24 @@ const luts = {
   'twilight': twilight_lut,
   'jet': jet_lut,
 }
+console.log(jet_lut.length);
 
-const colormaxscale = Math.max(...f0s);
-const colorminscale = -Math.max(...f0s);
+const ymax = Math.max(...f0s);
+const ymin = -Math.max(...f0s);
 
 ////////////////////  Uniforms  /////////////////////////////
 
 const uniforms = {	
   time: {type: 'f', value: stopwatch.time},
   speed: {value: 2.5},
-  scale: {value: 5.0},
+  scale: {value: 6.0},
   guided_on: {value:true},
   evanescent_on: {value:true},
   propagating_on: {value:true},
   vLut: {type: "v3v", value: luts['viridis']},
-  colormax: {type: 'f', value:colormaxscale},
-  colormin: {type: 'f', value:colorminscale}
+  colormax: {type: 'f', value:ymax},
+  colormin: {type: 'f', value:ymin},
+  colorscale: {value:.7},
 }
 
 ////////////////////////  Line (Input Field) ///////////////////////
@@ -234,6 +236,7 @@ const material_shader = new THREE.ShaderMaterial( {
         uniform float scale;
         uniform float colormax;
         uniform float colormin;
+        uniform float colorscale;
         uniform float time;
         uniform vec3 vLut[256];
         varying vec3 vColor;
@@ -257,7 +260,7 @@ const material_shader = new THREE.ShaderMaterial( {
             }
             float ypos = (cos(speed*time)*Real + sin(speed*time)*Imag);
             result = vec4( position.x, scale*ypos, position.z, 1.0 );
-            int index = int(256.0*(ypos-colormin)/(colormax - colormin));
+            int index = int(floor(clamp(256.0/colorscale*(ypos-colorscale*colormin)/(colormax - colormin),0.0, 256.0)));
             vColor = vLut[index];
             gl_Position = projectionMatrix * modelViewMatrix * result;
 
@@ -393,6 +396,13 @@ meshAppearenceFolder
   .name('colormap')
   .onChange((value) =>{mesh.material.uniforms.vLut.value = luts[value];
   });
+// meshAppearenceFolder.add(uniforms.colormin, 'value', ymin, 0)
+//   .listen()
+//   .name('colormin');
+// meshAppearenceFolder.add(uniforms.colormax, 'value', 0, ymax)
+//   .listen()
+//   .name('colormax');
+meshAppearenceFolder.add(uniforms.colorscale, 'value', 0.0, 1.0).name('color threshold');
 
 meshAppearenceFolder.add(mesh.material, 'wireframe');
 
