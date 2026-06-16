@@ -1,0 +1,21 @@
+\documentclass[10pt]{article}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.15}
+\usepackage{mathrsfs}
+\usetikzlibrary{arrows}
+\pagestyle{empty}
+\begin{document}
+\begin{tikzpicture}[line cap=round,line join=round,>=triangle 45,x=1cm,y=1cm]
+\begin{axis}[
+x=1cm,y=1cm,
+axis lines=middle,
+xmin=-6.03353754399283,
+xmax=5.772337107584379,
+ymin=-5.6894887758618715,
+ymax=6.116385875715338,
+xtick={-6,-5,...,5},
+ytick={-5,-4,...,6},]
+\clip(-6.03353754399283,-5.6894887758618715) rectangle (5.772337107584379,6.116385875715338);
+\end{axis}
+\end{tikzpicture}
+\end{document}

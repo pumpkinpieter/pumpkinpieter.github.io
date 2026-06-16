@@ -189,6 +189,35 @@ line2.computeLineDistances();
 line2.scale.set( 1, 1, 1 );
 scene.add( line2 );
 
+
+/////////////  Interface Lines ////////////////////
+
+const interface_points = [];
+interface_points.push( 1.0, 0.0, ztranslation );
+interface_points.push( 1.0, 0.0, 24.0 + ztranslation );
+
+const interface_line_geo = new LineGeometry();
+interface_line_geo.setPositions( interface_points);
+
+let interface_line_material = new LineMaterial( {
+
+  color: new THREE.Color().setRGB (.5, .5, 0.0),
+  linewidth: 2.5, // in pixels
+  dashed: false
+
+} );
+
+const interface_line = new Line2( interface_line_geo, interface_line_material );
+interface_line.computeLineDistances();
+interface_line.scale.set( 1, 1, 1 );
+scene.add( interface_line );
+
+const interface_line2 = interface_line.clone();
+interface_line2.computeLineDistances();
+interface_line2.scale.set( 1, 1, 1 );
+interface_line2.translateX(-2);
+scene.add( interface_line2 );
+
 //////////////// Planes (Ref Idx Profile) ////////////
 // const lut = new Lut( 'rainbow', 512 );
 // const color = lut.getColor( 0.5 );
