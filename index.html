@@ -10,22 +10,22 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 		<link rel="stylesheet" href="assets/css/main.css" />
-    	<link rel="shortcut icon" type="image/jpg" href="images/mobius_pink.svg"/>
+    	<link rel="shortcut icon" type="image/jpg" href="images/favicons/mobius_pink.svg"/>
 		</head>
 	<body class="is-preload">
 
 		<!-- Header -->
 			<section id="header">
 				<header>
-					<span class="image avatar"><img src="images/me_again.jpg" alt="" /></span>
+					<span class="image avatar"><img src="images/portraits/scruffy_me_cleaned.jpeg" alt="" /></span>
 					<h1 id="logo"><a href="#">Pieter Vandenberge</a></h1>
-					<p>Mathematician and visualization enthusiast.</p>
+					<p>Mathematics and Visualization</p>
 					
 				</header>
 				<nav id="nav">
 					<ul>
 						<li><a href="#one" class="active">About</a></li>
-						<!-- <li><a href="#two">Things I Can Do</a></li> -->
+						<li><a href="#two">Research</a></li>
 						<li><a href="#three">Visualizations</a></li>
 						<li><a href="#four">Contact</a></li>
 					</ul>
@@ -50,62 +50,94 @@
 						<!-- One -->
 							<section id="one">
 								<div class="image main" data-position="center">
-									<img src="images/test.gif" alt="" />
+									<img src="images/videos/output.gif" alt="" />
 								</div>
 								<div class="container">
 									<header class="major">
-										<h2>Seeing and Believing</h2>
-										<h3>Pieter Vandenberge's Website on Github</h3>
+										<h3>Welcome</h3>
+										<h3></h3>
 										<p>
-											Welcome.  I am a mathematician and visual artist with a particular interest
-											in modeling of optical waveguides.  I am a strong advocate for the power
-											of creating visualizations as a way of advancing scholarly understanding.
+											I am a mathematician and visualization enthusiast whose research focuses on
+											optical waveguides and resonance phenomena.  My work resides in the overlap of mathematical physics,
+											numerical methods, asymptotic analysis and numerical linear algebra.
 										</p>
+										  <blockquote cite="https://www.jstor.org/stable/j.ctt2jc8h2">
+					
+											<p>I love to reach understanding: first, to see something (big or little) that doesn’t 
+											make sense or is simply discordant, then to reflect and ponder, to search and stare 
+											in my mind’s eye until sometimes, miraculously, vision is transformed and mist and 
+											muddle develop into form, order, and connection.
+
+											Mathematics is not about numbers, equations, computations, or algorithms: it is 
+											about understanding.
+										</p>
+											<p>—William Thurston, <cite>Mathematicians: An Outer View of the Inner World</cite></p>
+  										</blockquote>
 									</header>
 								</div>
 							</section>
 
 						<!-- Two -->
-							<!-- <section id="two">
+							<section id="two">
 								<div class="container">
-									<h3>Things I Can Do</h3>
-									<p>Integer eu ante ornare amet commetus vestibulum blandit integer in curae ac faucibus integer non. Adipiscing cubilia elementum integer lorem ipsum dolor sit amet.</p>
-									<ul class="feature-icons">
-										<li class="icon solid fa-code">Write all the code</li>
-										<li class="icon solid fa-cubes">Stack small boxes</li>
-										<li class="icon solid fa-book">Read books and stuff</li>
-										<li class="icon solid fa-coffee">Drink much coffee</li>
-										<li class="icon solid fa-bolt">Lightning bolt</li>
-										<li class="icon solid fa-users">Shadow clone technique</li>
-									</ul>
-								</div>
-							</section> -->
-
-						<!-- Three -->
-							<section id="three">
-								<div class="container">
-										<h2>Visualizations</h2>
-									<p>See the electromagnetic fields propagated by slab waveguides resulting from a 
-										truncated parabolic input field.</p>
+									<h2>Research</h2>
+									<p></p>
 									<div class="features">
 										<article>
-											<a href="visualization/index.html" class="image"><img src="images/basic_slab_RIP_and_input.png" alt="Three layer slab waveguide and Input field."/></a>
+											<a href="https://opg.optica.org/oe/fulltext.cfm?uri=oe-31-16-26735" class="image"><img src="images/papers/outer_materials/mesh_study3.jpg" alt="Resonant response in micro-structured waveguide."/></a>
 											<div class="inner">
-												<h4><a href="visualization/index.html" class="text" style="color: #2aae8b;">Basic Three Layer Guide</a></h4>
-												<p>Three layers of dielectric material layered left to right.  The center has
-													a higher index of refraction than outside.</p>
+												<h4><a href="https://opg.optica.org/oe/fulltext.cfm?uri=oe-31-16-26735" class="text" style="color: #2aae8b;">Sensitivity of confinement losses in optical fibers to modeling approach</a></h4>
+												<p>Numerically predicted confiment loss values may be dramatically altered by 
+													different choices in how the outer regions of the device are modeled.
+												</p>
 											</div>
 										</article>
 									</div>
 								</div>
 							</section>
 
+						<!-- Three -->
+							<section id="three">
+								<div class="container">
+										<h2>Visualizations</h2>
+									<p>See the electromagnetic fields propagated by slab waveguides.</p>
+									<div class="features">
+										<article>
+											<a href="visualizations/basic/index.html" class="image">
+												<img src="images/basic_3_layer/3d_input_field.png" 
+												alt="Three layer slab waveguide and Input field."
+												style="border: 1px solid rgb(195, 194, 194);"/></a>
+											<div class="inner">
+												<h4><a href="visualizations/basic/index.html" class="text" style="color: #2aae8b;">Basic Three Layer Guide</a></h4>
+												<p>Three layers of dielectric material layered left to right; the center has
+												a higher index of refraction than outer regions.  Lower dimensional analogue of the basic
+												round core fiber.</p>
+											</div>
+										</article>
+										<article>
+											<a href="visualizations/hollow_core/index.html" class="image">
+												<img src="images/hollow_core/3d_input_field_white.png"
+												alt="Hollow core slab waveguide and Input field."
+												style="border: solid 1px rgb(195, 194, 194);"/></a>
+											<div class="inner">
+												<h4><a href="visualizations/hollow_core/index.html" class="text" style="color: #2aae8b;">Hollow Core Resonance</a></h4>
+												<p>This device consists of two layers of high index material 
+												surrounding an empty core region.  The field is propagated at
+												normal and resonant wavelengths.</p>
+											</div>
+										</article>
+									</div>
+								</div>
+							</section>
 						<!-- Four -->
 							<section id="four">
 								<div class="container">
-									<h3>Contact Me</h3>
-									<p>Interested in my work?  Please reach out.</p>
-									<form method="post" action="#">
+									<h2>Contact</h2>
+									<div>
+									<p>Interested in my work?  Please reach out! <br><br>
+									<span class="label">Email: </span><a href="mailto:pieter.j.vandenberge@gmail.com" class="text">  pieter (dot) j (dot) vandenberge (at) gmail (dot) com</a>
+									</p></div>
+									<!-- <form method="post" action="#">
 										<div class="row gtr-uniform">
 											<div class="col-6 col-12-xsmall"><input type="text" name="name" id="name" placeholder="Name" /></div>
 											<div class="col-6 col-12-xsmall"><input type="email" name="email" id="email" placeholder="Email" /></div>
@@ -118,7 +150,7 @@
 												</ul>
 											</div>
 										</div>
-									</form>
+									</form> -->
 								</div>
 							</section>
 
