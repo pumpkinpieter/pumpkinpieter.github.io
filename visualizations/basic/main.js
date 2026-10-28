@@ -196,8 +196,8 @@ let ratio = window.innerWidth / window.innerHeight
 
 let gamma, gamma_deg, fov, alpha, D;
 
-const s = .95;  // fraction of window width filled by mesh at opening
-const f = .25;  // fraction of window height at which mesh starts at opening
+const s = .9;  // fraction of window width filled by mesh at opening
+const f = .28;  // fraction of window height at which mesh starts at opening
 
 const check = s * xwidth * (1 / 2 - f) / (ratio * ytranslation)
 
@@ -917,20 +917,25 @@ componentsFolder
 
 //#region GUI: Camera 
 
-const viewFolder = gui.addFolder('Camera');
+const viewFolder = gui.addFolder('View');
 viewFolder.open();
 
 const viewParams = {
-    starting_view: function () { controls.reset() },
-    side_view: function () { camera.position.set(D * Math.cos(alpha), 0, D * Math.sin(alpha)) },
-    overhead_view: function () { camera.position.set(0, 0, D) },
+    front_view: function () {camera.position.set(0, -D * Math.cos(alpha), D * Math.sin(alpha)) },
+    side_view: function () { camera.position.set(D * Math.cos(Math.PI/8), 0, D * Math.sin(Math.PI/8)) },
+    overhead_view: function () { camera.position.set(0, 0, D);
+        controls.rotateLeft(-Math.PI/2);
+    },
+    back_view: function () { camera.position.set(0, D * Math.cos(alpha), D * Math.sin(alpha)) },
     gridlines_visible: { value: true },
 };
 
-viewFolder.add(viewParams, 'starting_view').name('Front')
+viewFolder.add(viewParams, 'front_view').name('Front')
 viewFolder.add(viewParams, 'side_view').name('Side')
 viewFolder.add(viewParams, 'overhead_view').name('Overhead')
+viewFolder.add(viewParams, 'back_view').name('Back')
 viewFolder.close();
+
 //#endregion
 
 //#region GUI: Animation
