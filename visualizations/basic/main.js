@@ -14,9 +14,14 @@ import guideds from './data/guided.json' with { type: "json" };
 import propagatings from './data/propagating.json' with { type: "json" };
 import evanescents from './data/evanescent.json' with { type: "json" };
 
+import input_indices from './data/trig_indices_input.json' with { type: "json" };
+import input_positions from './data/base_vertices_input.json' with { type: "json" };
+import input_heights from './data/input_heights.json' with { type: "json" };
+
 import f0s from './data/f0s.json' with { type: "json" };
 import x0s from './data/x0s.json' with { type: "json" };
 import y0s from './data/y0s.json' with { type: "json" };
+import input_y0s from './data/in_y0s.json' with { type: "json" };
 import Rhos from './data/Rhos.json' with { type: "json" };
 
 const loader2 = new FontLoader();
@@ -75,8 +80,10 @@ const stopwatch = new StopWatch();
 //////////// Get Data from Model //////////////
 
 let trig_bytes = new Uint32Array(indices);
-
 let base_bytes = new Float32Array(positions);
+
+let input_trig_bytes = new Uint32Array(input_indices);
+let input_base_bytes = new Float32Array(input_positions);
 
 ////////// Get Data Limits /////////////////
 
@@ -88,6 +95,8 @@ const zmin = -Math.max(...f0s);
 
 const ymin = Math.min(...y0s);
 const ymax = Math.max(...y0s);
+
+const input_ys_width = Math.max(...input_y0s) - Math.min(...input_y0s);
 
 const ywidth = ymax - ymin;
 const xwidth = xmax - xmin;
@@ -176,7 +185,7 @@ const luts = {
 
 ///////////////  Create Containers ///////////////
 
-let container = document.getElementById( 'container' );
+let container = document.getElementById('container');
 let subcontainer = document.createElement("div");
 
 subcontainer.setAttribute(
@@ -220,14 +229,20 @@ else {  // If not, we go with our first method to ensure mesh fits on screen (th
 }
 const camera = new THREE.PerspectiveCamera(fov, ratio, .01, 1000);
 camera.up.set(0, 0, 1);
-camera.position.set(0, -D * Math.cos(alpha), D * Math.sin(alpha));
+// camera.position.set(0, -D * Math.cos(alpha), D * Math.sin(alpha));
+
+camera.position.set(
+    .75*D * Math.cos(Math.PI / 16) * Math.cos(Math.PI / 16), 
+    .75*D * Math.cos(Math.PI / 16) * Math.sin(Math.PI / 16) - ytranslation,
+    .75*D * Math.sin(Math.PI / 16));
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio( window.devicePixelRatio );
-renderer.setSize( window.innerWidth, window.innerHeight );
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setSize(window.innerWidth, window.innerHeight);
 subcontainer.appendChild(renderer.domElement);
 
 const controls = new OrbitControls(camera, renderer.domElement);
+controls.target = new THREE.Vector3(0,-.85*ytranslation,0);
 
 //#endregion
 
@@ -240,7 +255,7 @@ const axes = new THREE.Group();
 const axesLength = 1.25;
 const axesHelper = new THREE.AxesHelper(axesLength);
 axesHelper.translateX(xmin - .5);
-axesHelper.translateY(-ytranslation - .5);
+axesHelper.translateY(-ytranslation - input_ys_width - .5);
 
 axes.add(axesHelper)
 
@@ -307,7 +322,8 @@ const uniforms = {
     guided_on: { value: true },
     evanescent_on: { value: true },
     propagating_on: { value: true },
-    vLut: { value: luts['copper'] },
+    vLut: { value: luts['magma'] },
+    vLutin: { value: luts['bone'] },
     colormax: { value: zmax },
     colormin: { value: zmin },
     colorscale: { value: 1.0 },
@@ -315,10 +331,6 @@ const uniforms = {
     shift: { value: 1.0 },
     mesh_number: { value: 0 },
 }
-
-// const big_uniforms = THREE.UniformsUtils.merge( [ THREE.UniformsLib[ 'lights' ], THREE.UniformsLib[ 'fog' ], uniforms ] );
-// big_uniforms['fogDensity'] = .5;
-// big_uniforms.update;
 
 //#endregion
 
@@ -368,6 +380,30 @@ const vertShader = `
         gl_Position = projectionMatrix * modelViewMatrix * result;
     }`;
 
+const inputVertShader = `
+    attribute vec2 height;
+    
+    uniform float speed;
+    uniform float scale;
+    uniform float gridlinescale;
+    uniform float colormax;
+    uniform float colormin;
+    uniform float colorscale;
+    uniform float time;
+    uniform vec3 vLutin[256];
+    varying vec3 vColor;
+
+
+    void main(){
+        vec4 result;
+        float zpos = (cos(speed*time)*height.x + sin(speed*time)*height.y);
+        
+        result = vec4( position.x, position.y, scale * zpos, 1.0 );
+        int index = int(floor(clamp(255.0/colorscale*(zpos-colorscale*colormin)/(colormax - colormin), 0.0, 255.0)));
+        vColor = vLutin[index];
+        gl_Position = projectionMatrix * modelViewMatrix * result;
+    }`;
+
 const fragShader = `
 varying vec3 vColor;
 void main(){
@@ -384,8 +420,6 @@ const material_shader = new THREE.ShaderMaterial({
     fragmentShader: fragShader,
     side: THREE.DoubleSide,
     wireframe: false,
-    // lights : true,  // Do not uncomment lights and fog without merging uniforms into big_uniforms and changing things where necessary
-    // fog: true,
 });
 
 const meshes = [];
@@ -409,6 +443,28 @@ const start_idx = uniforms.mesh_number.value;
 
 var mesh = meshes[start_idx];
 mesh.visible = true;
+//#endregion
+
+//#region Input Mesh
+const input_mesh_geometry = new THREE.BufferGeometry();
+input_mesh_geometry.setIndex(new THREE.Uint32BufferAttribute(input_trig_bytes, 1));
+input_mesh_geometry.setAttribute('position', new THREE.Float32BufferAttribute(input_base_bytes, 3));
+input_mesh_geometry.setAttribute('height', new THREE.Float32BufferAttribute(input_heights, 2));
+input_mesh_geometry.computeVertexNormals();
+
+
+const input_material_shader = new THREE.ShaderMaterial({
+    uniforms: uniforms,
+    vertexShader: inputVertShader,
+    fragmentShader: fragShader,
+    side: THREE.DoubleSide,
+    wireframe: false,
+});
+
+const input_mesh = new THREE.Mesh(input_mesh_geometry, input_material_shader);
+
+scene.add(input_mesh);
+input_mesh.translateY(-ytranslation);
 
 //#endregion
 
@@ -416,11 +472,9 @@ mesh.visible = true;
 
 //#region Gridline Setup
 
-// const gridlines = new THREE.Group();
-// scene.add(gridlines);
-
 let base_x0step = 2;
 let base_y0step = 4;
+
 // Function to set complex valued height attributes correctly for LineGeometry
 function setHeights(array, geometry, name) {
     // converts [ z1r, z1i, z2r, z2i,... ] to pairs format [z1r, z1i, z2r, z2i, z2r, z2i, ...]
@@ -532,7 +586,6 @@ gridline_material.onBeforeCompile = function (shader) {
         'vec4 end = modelViewMatrix * vec4( vec3(instanceEnd.x, instanceEnd.y, scale * resultEnd), 1.0 );'
     );
     gridline_material.userData.shader = shader;
-    console.log(shader.vertexShader);
 };
 
 // Set base gridline positions, translate resultant line later by ybase/xbase
@@ -756,6 +809,31 @@ for (let i = 1; i < Rhos.length - 1; i++) {
 
 //#endregion
 
+//#region Input Planes
+
+const plane_color = new THREE.Color().setRGB(0.51, 0.5, 0.6)
+const ns = [1.4, 1.5, 1.4];
+const maxns = Math.max(...ns);
+const plane_height = 13;
+
+const planes = new THREE.Group();
+
+for (let i = 0; i < Rhos.length - 1; i++) {
+    let plane_geometry = new THREE.PlaneGeometry(Rhos[i + 1] - Rhos[i], plane_height);
+    let plane_material = new THREE.MeshBasicMaterial({
+        color: plane_color, side: THREE.DoubleSide,
+        transparent: true, opacity: (ns[i] / maxns) ** 4 * .7
+    });
+    let plane = new THREE.Mesh(plane_geometry, plane_material);
+    plane.translateY(-ytranslation);
+    plane.translateX((Rhos[i + 1] + Rhos[i]) / 2);
+    plane.rotateX(Math.PI / 2);
+    planes.add(plane);
+}
+scene.add(planes);
+
+//#endregion
+
 //#region Input Field Line
 
 const f0_points = [];
@@ -824,6 +902,7 @@ const guiBaseParams = {
     reset: function () {
         gui.reset();
         controls.reset();
+        controls.target = new THREE.Vector3(0,-.85*ytranslation,0);
     },
     full_screen: function () {
         const fullscreenElement =
@@ -857,37 +936,37 @@ const componentsParams = {
     evanescent_on: true,
 };
 
-if (Nmesh > 1){
-  fieldFolder
-      .add(uniforms.mesh_number, 'value', 0, Nmesh - 1, 1)
-      .name('mesh index')
-      .listen()
-      .onChange((value) => {
-          if (meshParams.meshVisible) {
-              mesh.visible = false;
-          };
-          uniforms.mesh_number.value = value;
-          // uniforms.frequency.value = value;
-          // const index = argTarget(frequencies, value);
-          mesh = meshes[value];
-          if (meshParams.meshVisible) {
-              mesh.visible = true;
-          }
-          if (viewParams.gridlines_visible.value) {
-              current_lgls.visible = false;
-              current_tvgls.visible = false;
-              current_lgls = lgls[value];
-              current_tvgls = tvgls[value];
-              current_lgls.visible = true;
-              current_tvgls.visible = true;
-          }
-          else {
-              current_lgls = lgls[value];
-              current_tvgls = tvgls[value];
-              current_lgls.visible = false;
-              current_tvgls.visible = false;
-          }
-      });
+if (Nmesh > 1) {
+    fieldFolder
+        .add(uniforms.mesh_number, 'value', 0, Nmesh - 1, 1)
+        .name('mesh index')
+        .listen()
+        .onChange((value) => {
+            if (meshParams.meshVisible) {
+                mesh.visible = false;
+            };
+            uniforms.mesh_number.value = value;
+            // uniforms.frequency.value = value;
+            // const index = argTarget(frequencies, value);
+            mesh = meshes[value];
+            if (meshParams.meshVisible) {
+                mesh.visible = true;
+            }
+            if (viewParams.gridlines_visible.value) {
+                current_lgls.visible = false;
+                current_tvgls.visible = false;
+                current_lgls = lgls[value];
+                current_tvgls = tvgls[value];
+                current_lgls.visible = true;
+                current_tvgls.visible = true;
+            }
+            else {
+                current_lgls = lgls[value];
+                current_tvgls = tvgls[value];
+                current_lgls.visible = false;
+                current_tvgls.visible = false;
+            }
+        });
 }
 
 const componentsFolder = fieldFolder.addFolder("Components")
@@ -915,18 +994,33 @@ componentsFolder
 // componentsFolder.close();
 //#endregion
 
-//#region GUI: Camera 
+//#region GUI: Viewpoints 
 
-const viewFolder = gui.addFolder('View');
+const viewFolder = gui.addFolder('Viewpoints');
 viewFolder.open();
 
 const viewParams = {
-    front_view: function () {camera.position.set(0, -D * Math.cos(alpha), D * Math.sin(alpha)) },
-    side_view: function () { camera.position.set(D * Math.cos(Math.PI/8), 0, D * Math.sin(Math.PI/8)) },
-    overhead_view: function () { camera.position.set(0, 0, D);
-        controls.rotateLeft(-Math.PI/2);
+    front_view: function () { camera.position.set(0, -D * Math.cos(alpha), D * Math.sin(alpha));
+                controls.target = new THREE.Vector3(0,0,0);
+     },
+    side_view: function () { camera.position.set(D * Math.cos(Math.PI / 8), 0, D * Math.sin(Math.PI / 8));
+                controls.target = new THREE.Vector3(0,0,0);
+     },
+    overhead_view: function () {
+        camera.position.set(0, 0, D);
+        controls.target = new THREE.Vector3(0,0,0);
+        controls.rotateLeft(-Math.PI / 2);
     },
-    back_view: function () { camera.position.set(0, D * Math.cos(alpha), D * Math.sin(alpha)) },
+    back_view: function () { camera.position.set(0, D * Math.cos(alpha), D * Math.sin(alpha));
+                controls.target = new THREE.Vector3(0,0,0);
+     },
+    three_quarters: function () { 
+        camera.position.set(
+            D * Math.cos(Math.PI / 8) * Math.cos(Math.PI / 8), 
+            D * Math.cos(Math.PI / 8) * Math.sin(Math.PI / 8),
+            D * Math.sin(Math.PI / 8));
+        controls.target = new THREE.Vector3(0,0,0);
+    },
     gridlines_visible: { value: true },
 };
 
@@ -934,6 +1028,7 @@ viewFolder.add(viewParams, 'front_view').name('Front')
 viewFolder.add(viewParams, 'side_view').name('Side')
 viewFolder.add(viewParams, 'overhead_view').name('Overhead')
 viewFolder.add(viewParams, 'back_view').name('Back')
+viewFolder.add(viewParams, 'three_quarters').name('3/4')
 viewFolder.close();
 
 //#endregion
@@ -974,20 +1069,11 @@ const styleFolder = gui.addFolder('Style');
 
 //#region SUB GUI: SUB Appearence: Mesh
 
-const meshAppearenceFolder = styleFolder.addFolder('Mesh');
+const meshAppearenceFolder = styleFolder.addFolder('Meshes');
 
 meshAppearenceFolder.open();
 
-const meshParams = {
-    meshVisible: true
-}
-
-meshAppearenceFolder.add(meshParams, 'meshVisible')
-    .name('visible')
-    .listen()
-    .onChange((value) => {
-        mesh.visible = value;
-    });
+meshAppearenceFolder.add(mesh, 'visible');
 
 const colormapList = {
     'copper': 'copper',
@@ -998,7 +1084,7 @@ const colormapList = {
 }
 
 const appearenceParams = {
-    colormaps: colormapList['copper'],
+    colormaps: colormapList['magma'],
 };
 
 meshAppearenceFolder.add(mesh.material.uniforms.scale, 'value', 0.0, 2.0).name('scale');
@@ -1012,8 +1098,16 @@ meshAppearenceFolder
 
 meshAppearenceFolder.add(mesh.material.uniforms.colorscale, 'value', 0.04, 2.0).name('colorscale');
 
-// meshAppearenceFolder.close();
+meshAppearenceFolder.close();
 
+//#endregion
+
+//#region SUB GUI: SUB Appearence: Planes
+const planeAppearenceFolder = styleFolder.addFolder('Planes');
+
+planeAppearenceFolder.add(planes, 'visible');
+
+planeAppearenceFolder.close();
 //#endregion
 
 //#region SUB GUI: SUB Appearence: Lines
