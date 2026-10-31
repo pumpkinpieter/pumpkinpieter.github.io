@@ -232,10 +232,12 @@ const camera = new THREE.PerspectiveCamera(fov, ratio, .01, 1000);
 camera.up.set(0, 0, 1);
 // camera.position.set(0, -D * Math.cos(alpha), D * Math.sin(alpha));
 
+const Dscale = .75;
+
 camera.position.set(
-    .75*D * Math.cos(Math.PI / 16) * Math.cos(Math.PI / 16), 
-    .75*D * Math.cos(Math.PI / 16) * Math.sin(Math.PI / 16) - ytranslation,
-    .75*D * Math.sin(Math.PI / 16));
+    Dscale * D * Math.cos(Math.PI / 12) * Math.cos(Math.PI / 12), 
+    Dscale * D * Math.cos(Math.PI / 12) * Math.sin(Math.PI / 12) - ytranslation,
+    Dscale * D * Math.sin(Math.PI / 12));
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(window.devicePixelRatio);
@@ -243,7 +245,8 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 subcontainer.appendChild(renderer.domElement);
 
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.target = new THREE.Vector3(0,-.85*ytranslation,0);
+const og_target_coords = [0, -.85*ytranslation, 0];
+controls.target = new THREE.Vector3(og_target_coords[0], og_target_coords[1], og_target_coords[2]);
 
 //#endregion
 
@@ -472,7 +475,7 @@ input_mesh.translateY(-ytranslation);
 
 //#region Gridlines
 
-//#region Gridline Setup
+//#region SUB Gridlines: Setup
 
 let base_x0step = 2;
 let base_y0step = 4;
@@ -495,6 +498,31 @@ function setHeights(array, geometry, name) {
     geometry.setAttribute(name + 'Start', new THREE.InterleavedBufferAttribute(instanceBuffer, 2, 0)); // xyz
     geometry.setAttribute(name + 'End', new THREE.InterleavedBufferAttribute(instanceBuffer, 2, 2)); // xyz
 }
+
+// Set base gridline positions, translate resultant line later by ybase/xbase
+const TVGLBasePositions = new Float32Array(3 * x0s.length);
+const LGLBasePositions = new Float32Array(3 * y0s.length);
+const input_LGLBasePositions = new Float32Array(3 * input_y0s.length);
+
+for (let i = 0; i < x0s.length; i++) {
+    TVGLBasePositions[3 * i] = x0s[i];
+    TVGLBasePositions[3 * i + 1] = 0;
+    TVGLBasePositions[3 * i + 2] = 0;
+};
+
+for (let i = 0; i < y0s.length; i++) {
+    LGLBasePositions[3 * i] = 0;
+    LGLBasePositions[3 * i + 1] = y0s[i];
+    LGLBasePositions[3 * i + 2] = 0;
+};
+
+for (let i = 0; i < input_y0s.length; i++) {
+    input_LGLBasePositions[3 * i] = 0;
+    input_LGLBasePositions[3 * i + 1] = input_y0s[i];
+    input_LGLBasePositions[3 * i + 2] = 0;
+};
+
+//#region Sub Gridline Setup: Materials
 
 let gridline_material = new LineMaterial({
     linewidth: 0.3,
@@ -590,25 +618,80 @@ gridline_material.onBeforeCompile = function (shader) {
     gridline_material.userData.shader = shader;
 };
 
-// Set base gridline positions, translate resultant line later by ybase/xbase
-const TVGLBasePositions = new Float32Array(3 * x0s.length);
-const LGLBasePositions = new Float32Array(3 * y0s.length);
+let input_gridline_material = new LineMaterial({
+    linewidth: 0.3,
+    vertexColors: true,
+});
 
-for (let i = 0; i < x0s.length; i++) {
-    TVGLBasePositions[3 * i] = x0s[i];
-    TVGLBasePositions[3 * i + 1] = 0;
-    TVGLBasePositions[3 * i + 2] = 0;
-};
+input_gridline_material.uniforms.time = uniforms.time;
+input_gridline_material.uniforms.scale = uniforms.scale;
+input_gridline_material.uniforms.speed = uniforms.speed;
+input_gridline_material.uniforms.vLut = uniforms.vLutin;
+input_gridline_material.uniforms.gridlinescale = uniforms.gridlinescale;
+input_gridline_material.uniforms.colorscale = uniforms.colorscale;
+input_gridline_material.uniforms.colormin = uniforms.colormin;
+input_gridline_material.uniforms.colormax = uniforms.colormax;
+input_gridline_material.uniforms.y0step = { value: base_y0step };
+input_gridline_material.uniforms.x0step = { value: base_x0step };
 
-for (let i = 0; i < y0s.length; i++) {
-    LGLBasePositions[3 * i] = 0;
-    LGLBasePositions[3 * i + 1] = y0s[i];
-    LGLBasePositions[3 * i + 2] = 0;
+input_gridline_material.onBeforeCompile = function (shader) {
+    shader.vertexShader = 'uniform float time;\n' + shader.vertexShader;
+    shader.vertexShader = 'uniform float scale;\n' + shader.vertexShader;
+    shader.vertexShader = 'uniform float speed;\n' + shader.vertexShader;
+    shader.vertexShader = 'uniform float colorscale;\n' + shader.vertexShader;
+    shader.vertexShader = 'uniform float colormin;\n' + shader.vertexShader;
+    shader.vertexShader = 'uniform float colormax;\n' + shader.vertexShader;
+    shader.vertexShader = 'uniform float gridlinescale;\n' + shader.vertexShader;
+    shader.vertexShader = 'uniform vec3 vLut[256];\n' + shader.vertexShader;
+    shader.vertexShader = 'attribute vec2 heightStart;\n' + shader.vertexShader;
+    shader.vertexShader = 'attribute vec2 heightEnd;\n' + shader.vertexShader;
+    shader.vertexShader = shader.vertexShader.replace(`		void main() {
+
+			#ifdef USE_COLOR
+
+				vColor.xyz = ( position.y < 0.5 ) ? instanceColorStart : instanceColorEnd;
+
+			#endif`,
+        `		void main() {
+                        float RealStart;
+                        float ImagStart;
+                        float RealEnd;
+                        float ImagEnd;
+                        float resultStart;
+                        float resultEnd;
+
+                        RealStart += heightStart.x;
+                        ImagStart += heightStart.y;
+                        RealEnd += heightEnd.x;
+                        ImagEnd += heightEnd.y;
+                            
+                        resultStart = cos(speed * time) * RealStart + sin(speed * time) * ImagStart;
+                        resultEnd = cos(speed * time) * RealEnd + sin(speed * time) * ImagEnd;
+        
+                        #ifdef USE_COLOR
+                        int indexStart = int(floor(clamp(255.0/colorscale*(resultStart-colorscale*colormin)/(colormax - colormin), 0.0, 255.0)));
+                        int indexEnd = int(floor(clamp(255.0/colorscale*(resultEnd-colorscale*colormin)/(colormax - colormin), 0.0, 255.0)));
+
+                        vColor.xyz = ( position.y < 0.5 ) ? gridlinescale * vLut[indexStart] : gridlinescale * vLut[indexEnd];
+                        #endif
+                    \n`
+    );
+    shader.vertexShader = shader.vertexShader.replace(
+        'vec4 start = modelViewMatrix * vec4( instanceStart, 1.0 );',
+        'vec4 start = modelViewMatrix * vec4( vec3(instanceStart.x, instanceStart.y, scale * resultStart), 1.0 );'
+    ).replace(
+        'vec4 end = modelViewMatrix * vec4( instanceEnd, 1.0 );',
+        'vec4 end = modelViewMatrix * vec4( vec3(instanceEnd.x, instanceEnd.y, scale * resultEnd), 1.0 );'
+    );
+    input_gridline_material.userData.shader = shader;
 };
+//#endregion
 
 //#endregion
 
 //#region Transverse Gridlines
+
+//#region SUB Transverse Gridlines: Main Meshes
 
 function makeTransvereGridlines(y0step, idx, group) {
     let NTVgridlines = Math.floor((y0s.length - 1) / y0step) + 1;
@@ -661,9 +744,62 @@ for (let i = 0; i < Nmesh; i++) {
 
 var current_tvgls = tvgls[start_idx];
 current_tvgls.visible = true;
+
+//#endregion
+
+//#region SUB Transverse Gridlines: Input Mesh
+
+function makeInputTransvereGridlines(y0step, idx, group) {
+    let NinputTVgridlines = Math.floor((input_y0s.length - 1) / y0step) + 1;
+    for (let i = 1; i < NinputTVgridlines; i++) {
+        let ybase = input_y0s[i * y0step];
+
+        let current_height = input_heights.slice(y0step * i * 2 * x0s.length,
+            (y0step * i + 1) * 2 * x0s.length);
+
+        const temp_geometry = new LineGeometry();
+        temp_geometry.setPositions(TVGLBasePositions);
+        setHeights(current_height, temp_geometry, 'height');
+
+        let line = new Line2(temp_geometry, input_gridline_material);
+        line.computeLineDistances();
+        line.scale.set(1, 1, 1);
+        line.translateY(ybase - ytranslation);
+        group.add(line);
+    }
+    scene.add(group);
+    return group
+}
+
+function setInputTVGLSvisiblity(y0step, group) {
+    // group.visible = true;
+    let NinputTVgridlines = Math.floor((input_y0s.length - 1) / y0step) + 1;
+    for (let i = 0; i < NinputTVgridlines - 1; i++) {
+        group.children[i * y0step].visible = true;
+        for (let j = 1; j < y0step; j++) {
+            group.children[i * y0step + j].visible = false;
+        }
+    }
+}
+
+const input_tvgls = [];
+for (let i = 0; i < Nmesh; i++) {
+    let group = makeInputTransvereGridlines(1, i, new THREE.Group());
+    group.visible = false;
+    setInputTVGLSvisiblity(base_y0step, group);
+    input_tvgls.push(group);
+}
+
+var current_input_tvgls = input_tvgls[start_idx];
+current_input_tvgls.visible = true;
+console.log(current_input_tvgls);
+//#endregion
+
 //#endregion
 
 //#region Longitudinal Gridlines
+
+//#region SUB Longitudinal Gridlines: Main Meshes
 
 function makeLongitudinalGridlines(x0step, idx, group) {
     let NLgridlines = Math.floor((x0s.length - 1) / x0step) + 1;
@@ -725,6 +861,50 @@ for (let i = 0; i < Nmesh; i++) {
 }
 var current_lgls = lgls[start_idx];
 current_lgls.visible = true;
+
+//#endregion
+
+//#region SUB Longitudinal Gridlines: Input Meshe
+
+function makeInputLongitudinalGridlines(x0step, idx, group) {
+    let NLgridlines = Math.floor((x0s.length - 1) / x0step) + 1;
+    for (let i = 0; i < NLgridlines; i++) {
+        let xbase = x0s[i * x0step];
+
+        let temp_height = [];
+
+        for (let j = 0; j < y0s.length; j++) {
+            let chs = input_heights.slice(2 * (i * x0step + j * x0s.length),
+                2 * (i * x0step + j * x0s.length + 1))
+            temp_height.push(chs[0], chs[1]);
+        }
+
+        const temp_geometry = new LineGeometry();
+        temp_geometry.setPositions(input_LGLBasePositions);
+        setHeights(new Float32Array(temp_height), temp_geometry, 'height');
+
+        let line = new Line2(temp_geometry, input_gridline_material);
+        line.computeLineDistances();
+        line.scale.set(1, 1, 1);
+        line.translateX(xbase);
+        line.translateY(-ytranslation);
+        group.add(line);
+    }
+    scene.add(group);
+    return group
+}
+
+const input_lgls = [];
+for (let i = 0; i < Nmesh; i++) {
+    let group = makeInputLongitudinalGridlines(1, i, new THREE.Group());
+    group.visible = false;
+    setLGLSvisiblity(base_x0step, group);
+    input_lgls.push(group);
+}
+var current_input_lgls = input_lgls[start_idx];
+current_input_lgls.visible = true;
+//#endregion
+
 //#endregion
 
 //#endregion
@@ -904,7 +1084,7 @@ const guiBaseParams = {
     reset: function () {
         gui.reset();
         controls.reset();
-        controls.target = new THREE.Vector3(0,-.85*ytranslation,0);
+        controls.target = new THREE.Vector3(og_target_coords[0], og_target_coords[1], og_target_coords[2]);
     },
     full_screen: function () {
         const fullscreenElement =
@@ -1069,13 +1249,13 @@ animationFolder.close();
 
 const styleFolder = gui.addFolder('Style');
 
-//#region SUB GUI: SUB Appearence: Mesh
+//#region SUB GUI: SUB Appearence: Mesh(es)
 
 const meshAppearenceFolder = styleFolder.addFolder('Meshes');
 
 meshAppearenceFolder.open();
 
-meshAppearenceFolder.add(mesh, 'visible');
+meshAppearenceFolder.add(mesh.material.uniforms.scale, 'value', 0.0, 2.0).name('scale');
 
 const colormapList = {
     'copper': 'copper',
@@ -1087,18 +1267,43 @@ const colormapList = {
 
 const appearenceParams = {
     colormaps: colormapList['magma'],
+    input_colormaps: colormapList['bone'],
 };
 
-meshAppearenceFolder.add(mesh.material.uniforms.scale, 'value', 0.0, 2.0).name('scale');
+const meshParams = {
+    meshVisible: true
+}
 
-meshAppearenceFolder
+const inputMeshAppearenceFolder = meshAppearenceFolder.addFolder('Incident Field');
+inputMeshAppearenceFolder.open();
+
+inputMeshAppearenceFolder.add(input_mesh, 'visible');
+
+inputMeshAppearenceFolder
+    .add(appearenceParams, 'input_colormaps', colormapList)
+    .name('colormap')
+    .onChange((value) => {
+        input_mesh.material.uniforms.vLutin.value = luts[value];
+    });
+
+const mainMeshAppearenceFolder = meshAppearenceFolder.addFolder('Resultant Field');
+mainMeshAppearenceFolder.open();
+
+mainMeshAppearenceFolder.add(meshParams, 'meshVisible')
+    .name('visible')
+    .listen()
+    .onChange((value) => {
+        mesh.visible = value;
+    });
+
+mainMeshAppearenceFolder
     .add(appearenceParams, 'colormaps', colormapList)
     .name('colormap')
     .onChange((value) => {
         mesh.material.uniforms.vLut.value = luts[value];
     });
 
-meshAppearenceFolder.add(mesh.material.uniforms.colorscale, 'value', 0.04, 2.0).name('colorscale');
+mainMeshAppearenceFolder.add(mesh.material.uniforms.colorscale, 'value', 0.04, 2.0).name('colorscale');
 
 meshAppearenceFolder.close();
 
@@ -1165,6 +1370,8 @@ gridAppearenceFolder.add(viewParams.gridlines_visible, 'value')
     .onChange((value) => {
         current_lgls.visible = value;
         current_tvgls.visible = value;
+        current_input_lgls.visible = value;
+        current_input_tvgls.visible = value;
     });
 
 const grid_params = {
@@ -1175,6 +1382,7 @@ const grid_params = {
 gridAppearenceFolder.add(grid_params, 'line width', .01, 10)
     .onChange(function (val) {
         gridline_material.linewidth = val;
+        input_gridline_material.linewidth = val;
     });
 gridAppearenceFolder.add(gridline_material.uniforms.gridlinescale, 'value', .01, 1).name('shade')
 
@@ -1184,9 +1392,12 @@ gridAppearenceFolder.add(grid_params, 'x step', 1, 20)
         // longitudinal_gridlines.clear();
         // makeLongitudinalGridlines(val, uniforms.mesh_number.value );
         gridline_material.uniforms.x0step.value = val;
+        input_gridline_material.uniforms.x0step.value = val;
         for (let i = 0; i < lgls.length; i++) {
             let group = lgls[i];
             setLGLSvisiblity(val, group);
+            let ingroup = input_lgls[i];
+            setLGLSvisiblity(val, ingroup);
         }
     });
 
@@ -1196,9 +1407,12 @@ gridAppearenceFolder.add(grid_params, 'y step', 1, 20)
         // transverse_gridlines.clear();
         // makeTransvereGridlines(val, uniforms.mesh_number.value );
         gridline_material.uniforms.y0step.value = val;
+        input_gridline_material.uniforms.y0step.value = val;
         for (let i = 0; i < tvgls.length; i++) {
             let group = tvgls[i];
             setTVGLSvisiblity(val, group);
+            let ingroup = input_tvgls[i];
+            setInputTVGLSvisiblity(val, ingroup);
         }
     });
 
