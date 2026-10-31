@@ -1,12 +1,12 @@
-import * as THREE from "https://esm.sh/three";
-import { OrbitControls } from "https://esm.sh/three/examples/jsm/controls/OrbitControls.js";
-import { GUI } from "https://esm.sh/lil-gui"
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { GUI } from "https://cdn.jsdelivr.net/npm/lil-gui@0.21/+esm"
 import * as CMAP from "https://esm.sh/colormap";
-import { LineGeometry } from 'https://esm.sh/three/addons/lines/LineGeometry.js';
-import { Line2 } from 'https://esm.sh/three/addons/lines/Line2.js';
-import { LineMaterial } from 'https://esm.sh/three/addons/lines/LineMaterial.js';
-import { FontLoader } from 'https://esm.sh/three/addons/loaders/FontLoader.js';
-import { TextGeometry } from 'https://esm.sh/three/addons/geometries/TextGeometry.js';
+import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
+import { Line2 } from 'three/addons/lines/Line2.js';
+import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
+import { FontLoader } from 'three/addons/loaders/FontLoader.js';
+import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
 
 import indices from './data/trig_indices.json' with { type: "json" };
 import positions from './data/base_vertices.json' with { type: "json" };
@@ -80,6 +80,7 @@ const stopwatch = new StopWatch();
 //////////// Get Data from Model //////////////
 
 let trig_bytes = new Uint32Array(indices);
+
 let base_bytes = new Float32Array(positions);
 
 let input_trig_bytes = new Uint32Array(input_indices);
@@ -443,6 +444,7 @@ const start_idx = uniforms.mesh_number.value;
 
 var mesh = meshes[start_idx];
 mesh.visible = true;
+
 //#endregion
 
 //#region Input Mesh
