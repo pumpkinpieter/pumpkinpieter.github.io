@@ -235,9 +235,9 @@ camera.up.set(0, 0, 1);
 const Dscale = .43;
 
 camera.position.set(
-    Dscale * D * Math.cos(Math.PI / 12) * Math.cos(Math.PI / 12), 
-    Dscale * D * Math.cos(Math.PI / 12) * Math.sin(Math.PI / 12) - ytranslation,
-    Dscale * D * Math.sin(Math.PI / 12));
+    Dscale * D * Math.cos(Math.PI / 8) * Math.cos(Math.PI / 3), 
+    -Dscale * D * Math.cos(Math.PI / 8) * Math.sin(Math.PI / 3) - ytranslation,
+    Dscale * D * Math.sin(Math.PI / 8));
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(window.devicePixelRatio);
@@ -792,7 +792,6 @@ for (let i = 0; i < Nmesh; i++) {
 
 var current_input_tvgls = input_tvgls[start_idx];
 current_input_tvgls.visible = true;
-console.log(current_input_tvgls);
 //#endregion
 
 //#endregion
@@ -998,20 +997,82 @@ const ns = [1, 1.5, 1, 1.5, 1];
 const maxns = Math.max(...ns);
 const plane_height = 10;
 
-const planes = new THREE.Group();
+//#region SUB Input Planes: Front/Back Planes
+
+const front_back_planes = new THREE.Group();
 
 for (let i = 0; i < Rhos.length - 1; i++) {
     let plane_geometry = new THREE.PlaneGeometry(Rhos[i + 1] - Rhos[i], plane_height);
     let plane_material = new THREE.MeshBasicMaterial({
         color: plane_color, side: THREE.DoubleSide,
-        transparent: true, opacity: (ns[i] / maxns) ** 4 * .7
+        transparent: true, opacity: ((ns[i]-1) / (maxns-1)) * .7
+    });
+    let front_plane = new THREE.Mesh(plane_geometry, plane_material);
+    front_plane.translateX((Rhos[i + 1] + Rhos[i]) / 2);
+    let back_plane = front_plane.clone();
+    back_plane.material.opacity = ((ns[i]-1) / (maxns-1)) * .5
+    front_plane.translateY(-ytranslation);
+    front_plane.rotateX(Math.PI / 2);
+    back_plane.translateY(ytranslation);
+    back_plane.rotateX(Math.PI / 2);
+
+    front_back_planes.add(front_plane);
+    front_back_planes.add(back_plane);
+}
+scene.add(front_back_planes);
+
+//#endregion
+
+//#region SUB Input Planes: Side Planes
+const side_planes = new THREE.Group();
+
+for (let i = 1; i < Rhos.length - 1; i++) {
+    let plane_geometry = new THREE.PlaneGeometry(plane_height, ymax-ymin);
+    let plane_material = new THREE.MeshBasicMaterial({
+        color: plane_color, 
+        side: THREE.DoubleSide,
+        transparent: true, 
+        opacity: .3
     });
     let plane = new THREE.Mesh(plane_geometry, plane_material);
-    plane.translateY(-ytranslation);
-    plane.translateX((Rhos[i + 1] + Rhos[i]) / 2);
-    plane.rotateX(Math.PI / 2);
-    planes.add(plane);
+    // plane.translateY(-ytranslation);
+    plane.translateX(Rhos[i]);
+    plane.rotateY(Math.PI / 2);
+    side_planes.add(plane);
 }
+scene.add(side_planes);
+
+//#endregion
+
+//#region SUB Input Planes: Top/Bottom Planes
+const top_bottom_planes = new THREE.Group();
+
+for (let i = 0; i < Rhos.length - 1; i++) {
+    let plane_geometry = new THREE.PlaneGeometry(Rhos[i + 1] - Rhos[i], ymax-ymin);
+    let plane_material = new THREE.MeshBasicMaterial({
+        color: plane_color, side: THREE.DoubleSide,
+        transparent: true, opacity: ((ns[i]-1) / (maxns-1)) * .5
+    });
+    let top_plane = new THREE.Mesh(plane_geometry, plane_material);
+    top_plane.translateX((Rhos[i + 1] + Rhos[i]) / 2);
+    let bottom_plane = top_plane.clone();
+    top_plane.translateZ(plane_height/2);
+    bottom_plane.translateZ(-plane_height/2)
+    // plane.rotateX(Math.PI / 2);
+
+    top_bottom_planes.add(top_plane);
+    top_bottom_planes.add(bottom_plane);
+}
+scene.add(top_bottom_planes);
+
+//#endregion
+
+const planes = new THREE.Group();
+
+planes.add(top_bottom_planes);
+planes.add(side_planes);
+planes.add(front_back_planes);
+
 scene.add(planes);
 
 //#endregion
@@ -1312,7 +1373,9 @@ meshAppearenceFolder.close();
 //#region SUB GUI: SUB Appearence: Planes
 const planeAppearenceFolder = styleFolder.addFolder('Planes');
 
-planeAppearenceFolder.add(planes, 'visible');
+planeAppearenceFolder.add(front_back_planes, 'visible').name('front/back');
+planeAppearenceFolder.add(top_bottom_planes, 'visible').name('top/bottom');
+planeAppearenceFolder.add(side_planes, 'visible').name('sides');
 
 planeAppearenceFolder.close();
 //#endregion
