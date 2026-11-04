@@ -235,8 +235,8 @@ camera.up.set(0, 0, 1);
 const Dscale = .43;
 
 camera.position.set(
-    Dscale * D * Math.cos(Math.PI / 8) * Math.cos(Math.PI / 3), 
-    -Dscale * D * Math.cos(Math.PI / 8) * Math.sin(Math.PI / 3) - ytranslation,
+    -Dscale * D * Math.cos(Math.PI / 8) * Math.cos(Math.PI / 2.75), 
+    -Dscale * D * Math.cos(Math.PI / 8) * Math.sin(Math.PI / 2.75) - ytranslation,
     Dscale * D * Math.sin(Math.PI / 8));
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
