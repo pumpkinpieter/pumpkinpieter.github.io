@@ -83,7 +83,7 @@ input, select, textarea {
 	}
 
 	body {
-		background: #fff;
+		background: #000000;
 	}
 
 		body.is-preload *, body.is-preload *:before, body.is-preload *:after {
@@ -1898,9 +1898,9 @@ input, select, textarea {
 		display: block;
 		float: left;
 		margin-right: -2em;
-		opacity: 0;
+		/* opacity: 0; */
 		width: 1em;
-		z-index: -1;
+		/* z-index: -1; */
 	}
 
 		input[type="checkbox"] + label,
