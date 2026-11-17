@@ -1316,7 +1316,8 @@ const meshAppearenceFolder = styleFolder.addFolder('Meshes');
 
 meshAppearenceFolder.open();
 
-meshAppearenceFolder.add(mesh.material.uniforms.scale, 'value', 0.0, 2.0).name('scale');
+meshAppearenceFolder.add(mesh.material.uniforms.scale, 'value', 0.0, 2.0).name('height scale');
+meshAppearenceFolder.add(mesh.material.uniforms.colorscale, 'value', 0.04, 2.0).name('color scale');
 
 const colormapList = {
     'copper': 'copper',
@@ -1347,6 +1348,8 @@ inputMeshAppearenceFolder
         input_mesh.material.uniforms.vLutin.value = luts[value];
     });
 
+inputMeshAppearenceFolder.close();
+
 const mainMeshAppearenceFolder = meshAppearenceFolder.addFolder('Resultant Field');
 mainMeshAppearenceFolder.open();
 
@@ -1364,8 +1367,7 @@ mainMeshAppearenceFolder
         mesh.material.uniforms.vLut.value = luts[value];
     });
 
-mainMeshAppearenceFolder.add(mesh.material.uniforms.colorscale, 'value', 0.04, 2.0).name('colorscale');
-
+mainMeshAppearenceFolder.close();
 meshAppearenceFolder.close();
 
 //#endregion
@@ -1407,6 +1409,7 @@ const border_params = {
     color: [silver.r, silver.g, silver.b],
 };
 borderAppearenceFolder.add(border_params, 'width', .01, 5)
+    .name('line width')
     .onChange(function (val) {
         border_line_material.linewidth = val;
     });
@@ -1497,7 +1500,7 @@ const inputFieldParams = {
 
 inputFieldFolder
     .add(inputFieldParams, 'width', 0, 5)
-    .name('width')
+    .name('line width')
     .onChange(function (value) {
 
         inputline_material.linewidth = value;
@@ -1528,6 +1531,7 @@ const interface_params = {
     color: [silver.r, silver.g, silver.b],
 };
 interfaceAppearenceFolder.add(interface_params, 'width', .1, 4)
+    .name('line width')
     .onChange(function (val) {
         interface_line_material.linewidth = val;
     });
